@@ -1,0 +1,4 @@
+pygame-ce>=2.5
+pytest>=8.0
+jsonschema>=4.20
+Pillow>=10.0
