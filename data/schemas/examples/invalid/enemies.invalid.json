@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "enemies": [
+    {
+      "id": "exemplo-rival",
+      "nome": "Rival Exemplo",
+      "tipo": "batalha",
+      "liga": 4,
+      "lider_hp": 20,
+      "deck": [
+        {
+          "carta": "vira-lata",
+          "iv_atk": 3,
+          "iv_hp": 3,
+          "nature": "calmo",
+          "qtd": 2
+        }
+      ],
+      "ia": "simples",
+      "regra_propria": null,
+      "falas": {
+        "vitoria": [],
+        "derrota": []
+      }
+    }
+  ]
+}

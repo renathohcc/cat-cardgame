@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "run",
+  "description": "Mini-run. Conexoes: todo no de uma camada conecta a todos os nos da camada seguinte (sem campo de arestas). Ultima camada = 1 no chefe (conferido no validate_data.py).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "draft_options", "draft_options_elite", "draft_options_rest", "drafts_elite", "rest_draft", "pool", "start_deck", "map"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "draft_options": {"type": "integer", "minimum": 1},
+    "draft_options_elite": {"type": "integer", "minimum": 1},
+    "draft_options_rest": {"type": "integer", "minimum": 1},
+    "drafts_elite": {"type": "integer", "minimum": 1, "description": "Drafts consecutivos apos vencer elite"},
+    "rest_draft": {"type": "boolean"},
+    "pool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effects", "specials"],
+      "properties": {
+        "effects": {"type": "boolean", "description": "true = todos os efeitos de effects.json"},
+        "specials": {"type": "boolean", "description": "true = todos os Gatos Especiais de specials.json"}
+      }
+    },
+    "start_deck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gatos", "origem"],
+      "properties": {
+        "gatos": {"type": "integer", "minimum": 1},
+        "origem": {"enum": ["sorteio"]}
+      }
+    },
+    "map": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["layers"],
+      "properties": {
+        "layers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["nodes"],
+            "properties": {
+              "nodes": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["id", "tipo", "inimigo"],
+                  "properties": {
+                    "id": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+                    "tipo": {"enum": ["batalha", "elite", "descanso", "chefe"]},
+                    "inimigo": {"type": ["string", "null"], "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

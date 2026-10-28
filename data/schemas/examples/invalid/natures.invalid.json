@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "natures": [
+    {
+      "id": "calmo",
+      "nome": "Calmo",
+      "atk": "1",
+      "hp": 1
+    },
+    {
+      "id": "bravo",
+      "nome": "Bravo",
+      "atk": 1,
+      "hp": -1
+    },
+    {
+      "id": "agitado",
+      "nome": "Agitado",
+      "atk": 2,
+      "hp": -2
+    }
+  ]
+}

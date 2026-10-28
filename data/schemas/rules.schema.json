@@ -1,0 +1,239 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "duel": {
+      "type": "object",
+      "properties": {
+        "leader_hp": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "slots": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "initial_hand": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "draw_per_turn": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hand_max": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "energy_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "first_player_energy_start": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "energy_per_turn": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "energy_cap": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "deck_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "first_player_no_attack_first_turn": {
+          "type": "boolean"
+        },
+        "draw_on_first_turn": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "leader_hp",
+        "slots",
+        "initial_hand",
+        "draw_per_turn",
+        "hand_max",
+        "energy_start",
+        "energy_per_turn",
+        "energy_cap",
+        "deck_size",
+        "first_player_no_attack_first_turn",
+        "draw_on_first_turn"
+      ],
+      "additionalProperties": false
+    },
+    "stats": {
+      "type": "object",
+      "properties": {
+        "iv_min": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "iv_max": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "min_stat": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "atk_iv_divisor": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "iv_min",
+        "iv_max",
+        "min_stat",
+        "atk_iv_divisor"
+      ],
+      "additionalProperties": false
+    },
+    "iv_weights": {
+      "type": "object",
+      "properties": {
+        "1": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "2": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "3": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "4": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "5": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "additionalProperties": false
+    },
+    "deadlock": {
+      "type": "object",
+      "properties": {
+        "variation": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 1
+        },
+        "min_damage": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stall_rounds": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "variation",
+        "min_damage",
+        "stall_rounds"
+      ],
+      "additionalProperties": false
+    },
+    "breed": {
+      "type": "object",
+      "properties": {
+        "mutation_chance": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "base_runs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "growth_runs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "mutation_chance",
+        "base_runs",
+        "growth_runs"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "duel",
+    "stats",
+    "iv_weights",
+    "deadlock",
+    "breed"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "rules"
+}

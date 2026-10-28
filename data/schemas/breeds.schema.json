@@ -1,0 +1,64 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "breeds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "papel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "custo": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "atk_base": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "hp_base": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "papel",
+          "custo",
+          "atk_base",
+          "hp_base",
+          "keywords"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "breeds"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "breeds"
+}

@@ -33,13 +33,14 @@ O duelo é 1x1, por turnos, e vence quem zerar o HP do Líder adversário. Os n�
 
 | Regra | Valor inicial |
 | --- | --- |
-| Líder | 20 HP, sem ataque |
+| Líder | 20 HP, sem ataque. Elite 22 HP e chefe 25 HP (provisório) |
 | Campo | 5 slots por lado |
 | Mão | 4 cartas iniciais, compra 1 por turno, máximo 7 |
-| Energia | 2 no primeiro turno, +1 por turno, teto 7, reinicia a cada turno |
+| Energia | 2 no primeiro turno, +1 por turno, teto 7, reinicia a cada turno. Exceção: quem começa o duelo tem só 1 de energia no seu primeiro turno (depois segue 3, 4, 5...) |
 | Ataque | cada gato ataca 1 vez por turno, um gato inimigo ou o Líder |
 | Dano | quem ataca e quem é atacado trocam dano (ATK contra HP), como no Hearthstone |
 | Entrada em campo | o gato não ataca no turno em que entra, exceto com Investida |
+| Quem começa | um dado decide no início do duelo. Quem começa compra normalmente, mas não pode atacar no seu primeiro turno |
 
 Não existe DEF. Os status são só **ATK** e **HP**.
 
@@ -63,9 +64,9 @@ Cada gato tem uma raça, que define custo, status base e habilidade, e dois IVs 
 | --- | --- | --- | --- | --- | --- |
 | Vira-lata | Equilibrado, base do breed | 2 | 2 | 4 | Nenhuma |
 | Siamês | Atacante | 3 | 4 | 3 | Investida |
-| Persa | Defensor do Líder | 3 | 1 | 6 | Provocar |
+| Persa | Defensor do Líder | 2 | 1 | 6 | Provocar |
 | Sphynx | Canhão de vidro | 3 | 5 | 2 | Primeira Patada |
-| Maine Coon | Tanque | 5 | 3 | 7 | Robusto |
+| Maine Coon | Tanque | 3 | 3 | 7 | Robusto |
 
 **Como o IV entra na conta (proposta)**
 
@@ -124,6 +125,24 @@ Você entra na run com um deck pronto de gatos da sua coleção, e a run só adi
 
 - Só aparecem no draft da run e somem no fim dela.
 - Exemplos para o MVP: dano direto, cura, buff de ATK, compra de cartas, ganhar energia.
+- **Lista do MVP (8):** Arranhão Certeiro (dano 3 em gato inimigo), Bote no Líder (dano 4 no Líder, ignora Provocar), Lambida Curativa (cura 3 em gato aliado), Soneca no Sol (cura 4 no seu Líder), Rugido de Guerra (+2 ATK até o fim do turno), Petisco Surpresa (compra 1), Farejar a Despensa (compra 2), Cochilo Revigorante (+2 de energia, respeitando o teto de 7).
+- **Gatos Especiais do MVP (8):** Sombra Miúda, Velha dos Novelos, Soneca Ancestral, Trovão Amarelo, Guardião Bigodudo, Mestre das Garras, Pelo de Aço e Gata das Brasas. Usam só as quatro keywords existentes, e alguns têm um efeito ao entrar (se não houver alvo válido, o efeito se perde e o gato entra mesmo assim).
+
+**Inimigos**
+
+- Os adversários são criadores (pessoas), nunca gatos. Todos podem jogar gatos, Espíritos e cartas de efeito.
+- **Chefe do MVP:** Madame Fifi Pelúcia, com Siamês e Sphynx de IV 5/5 e a regra própria **Banho de Espuma**: no início do turno dela, o Líder dela cura 1 HP (até o máximo).
+- **Impasse:** se ninguém tem gato jogável nem em campo, ou se por 5 rodadas completas seguidas ninguém joga gato, nenhum gato morre e nenhum Líder perde HP, o duelo é decidido por um golpe de Líder com poder igual à média de ATK do deck inicial (com variação de −1 a +1, mínimo 1). Continua sem limite de turnos.
+
+**Mini-run do MVP (fase 6)**
+
+Recorte da run completa, para validar a diversão antes da meta-progressão.
+
+- **Mapa:** 6 camadas com bifurcações. Todo nó de uma camada conecta a todos os nós da seguinte. Há batalha, elite, descanso e chefe; evento, loja e nó especial de gato ficam para depois. É um ato só.
+- **Deck:** 12 gatos adultos sorteados a cada run (a coleção entra na fase 7). Os Espíritos e efeitos do draft entram no deck além dos 12, sem teto de tamanho.
+- **Duelos:** cada duelo recomeça do zero (Líder cheio, mão nova). Não há vida persistente entre nós.
+- **Recompensas:** batalha rende 1 entre 3 opções; elite rende 2 drafts seguidos de 1 entre 3 cada; descanso rende 1 entre 2. Em todos o sorteio vem de efeitos e Espíritos juntos. A elite e a batalha têm de valer o risco frente ao descanso.
+- **Fim:** vencer o chefe encerra a run com vitória; perder, ou abandonar a run, encerra com derrota.
 
 ## Meta-progressão: adoção e breed
 
@@ -220,8 +239,9 @@ O MVP precisa responder uma pergunta: duelar com gatos de IVs diferentes e fazer
 - [ ] **Tempo de breed por raridade:** quantas runs cada raça exige.
 - [ ] **Mutação no breed:** chance entre 5% e 10%, valor exato a testar.
 - [ ] **Moedas e ração:** quantas moedas cada doação rende, preços de ração e decoração, e o efeito da ração.
-- [ ] **Lista de Gatos Especiais e efeitos:** definir os primeiros 8 de cada para o MVP.
-- [ ] **Nomes e personalidades dos rivais:** um por liga.
+- [x] **Lista de Gatos Especiais e efeitos:** primeiros 8 de cada definidos (ver Cartas de efeito).
+- [ ] **Nomes e personalidades dos rivais:** um por liga. No MVP só existe a Madame Fifi Pelúcia (chefe) e três criadores comuns/elite.
+- [ ] **Líder da elite e do chefe:** 22 e 25 HP são provisórios.
 - [ ] **Dificuldades opcionais:** definir depois de validar o núcleo.
 
 * [ ] **Item de natureza:** definir qual conquista o libera.

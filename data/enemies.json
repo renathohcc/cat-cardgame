@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "enemies": [
+    {
+      "id": "tonho-sem-sorte", "nome": "Tonho Sem-Sorte", "tipo": "batalha", "liga": 1,
+      "deck": [
+        {"carta": "vira-lata", "iv_atk": 1, "iv_hp": 2, "nature": "bravo", "qtd": 4},
+        {"carta": "persa", "iv_atk": 2, "iv_hp": 2, "nature": "calmo", "qtd": 2},
+        {"carta": "siames", "iv_atk": 1, "iv_hp": 2, "nature": "calmo", "qtd": 1},
+        {"carta": "sphynx", "iv_atk": 1, "iv_hp": 1, "nature": "calmo", "qtd": 1},
+        {"carta": "sombra-miuda", "qtd": 1},
+        {"carta": "arranhao-certeiro", "qtd": 1},
+        {"carta": "lambida-curativa", "qtd": 1},
+        {"carta": "petisco-surpresa", "qtd": 1}
+      ],
+      "ia": "simples", "regra_propria": null,
+      "falas": {
+        "vitoria": ["Ha! Hoje a sorte virou. Mentira, foi o gato mesmo.", "Ganhei! Alguém anota isso, que é raro."],
+        "derrota": ["Tá, tá, pode passar. Mas deixa um petisco pros meus bichinhos.", "Sempre eu. Até o vento do beco sopra contra mim."]
+      }
+    },
+    {
+      "id": "irmaos-pimenta", "nome": "Irmãos Pimenta", "tipo": "batalha", "liga": 1,
+      "deck": [
+        {"carta": "siames", "iv_atk": 2, "iv_hp": 2, "nature": "bravo", "qtd": 3},
+        {"carta": "vira-lata", "iv_atk": 3, "iv_hp": 3, "nature": "calmo", "qtd": 2},
+        {"carta": "sphynx", "iv_atk": 2, "iv_hp": 2, "nature": "calmo", "qtd": 1},
+        {"carta": "persa", "iv_atk": 3, "iv_hp": 3, "nature": "calmo", "qtd": 1},
+        {"carta": "sombra-miuda", "qtd": 1},
+        {"carta": "trovao-amarelo", "qtd": 1},
+        {"carta": "bote-no-lider", "qtd": 1},
+        {"carta": "rugido-de-guerra", "qtd": 1},
+        {"carta": "arranhao-certeiro", "qtd": 1}
+      ],
+      "ia": "simples", "regra_propria": null,
+      "falas": {
+        "vitoria": ["Tchau, tchau, lá do alto do telhado!", "Um, dois e acabou. Os dois falando junto, como sempre."],
+        "derrota": ["Escorreguei... foi o vento, tá?", "A culpa foi dele! Não, dele! Dos dois!"]
+      }
+    },
+    {
+      "id": "berenice-da-matilha", "nome": "Berenice da Matilha", "tipo": "elite", "liga": 1, "lider_hp": 22,
+      "deck": [
+        {"carta": "vira-lata", "iv_atk": 3, "iv_hp": 4, "nature": "bravo", "qtd": 2},
+        {"carta": "maine-coon", "iv_atk": 3, "iv_hp": 3, "nature": "calmo", "qtd": 2},
+        {"carta": "persa", "iv_atk": 3, "iv_hp": 3, "nature": "calmo", "qtd": 1},
+        {"carta": "sphynx", "iv_atk": 3, "iv_hp": 3, "nature": "calmo", "qtd": 1},
+        {"carta": "siames", "iv_atk": 3, "iv_hp": 3, "nature": "calmo", "qtd": 1},
+        {"carta": "guardiao-bigodudo", "qtd": 1},
+        {"carta": "velha-dos-novelos", "qtd": 1},
+        {"carta": "gata-das-brasas", "qtd": 1},
+        {"carta": "lambida-curativa", "qtd": 1},
+        {"carta": "farejar-a-despensa", "qtd": 1}
+      ],
+      "ia": "simples", "regra_propria": null,
+      "falas": {
+        "vitoria": ["A matilha vence, a matilha come. Próximo!", "Cuidei dessa turma a vida toda. Você achou que ia ser fácil?"],
+        "derrota": ["Hmpf. A matilha vai se reorganizar.", "Passou. Mas meus gatos vão lembrar do seu cheiro."]
+      }
+    },
+    {
+      "id": "madame-fifi-pelucia", "nome": "Madame Fifi Pelúcia", "tipo": "chefe", "liga": 1, "lider_hp": 25,
+      "deck": [
+        {"carta": "persa", "iv_atk": 4, "iv_hp": 4, "nature": "calmo", "qtd": 3},
+        {"carta": "maine-coon", "iv_atk": 4, "iv_hp": 4, "nature": "calmo", "qtd": 2},
+        {"carta": "siames", "iv_atk": 5, "iv_hp": 5, "nature": "bravo", "qtd": 1},
+        {"carta": "sphynx", "iv_atk": 5, "iv_hp": 5, "nature": "calmo", "qtd": 1},
+        {"carta": "guardiao-bigodudo", "qtd": 1},
+        {"carta": "pelo-de-aco", "qtd": 1},
+        {"carta": "soneca-no-sol", "qtd": 1},
+        {"carta": "lambida-curativa", "qtd": 1},
+        {"carta": "bote-no-lider", "qtd": 1}
+      ],
+      "ia": "simples",
+      "regra_propria": {
+        "id": "banho-de-espuma",
+        "nome": "Banho de Espuma",
+        "texto": "No início do turno dela, o Líder se cura em 1 HP.",
+        "gatilho": "inicio_turno_proprio",
+        "acao": {"tipo": "cura", "alvo": "lider_proprio", "valor": 1}
+      },
+      "falas": {
+        "vitoria": ["Ora, querido, até o seu pelo estava desalinhado. Volte quando estiver apresentável.", "Meus Persas nem despentearam. Pode tentar de novo, mas com mais classe."],
+        "derrota": ["Impossível! Meus bigodes... estão tortos? Fique com a vitória, mas o troféu de beleza continua meu.", "Hmpf. Seus gatos têm... personalidade. Isso foi um elogio. Quase."]
+      }
+    }
+  ]
+}

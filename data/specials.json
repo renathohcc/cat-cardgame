@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "specials": [
+    {"id": "sombra-miuda", "nome": "Sombra Miúda", "custo": 1, "atk": 2, "hp": 2, "keywords": ["investida"], "efeito_ao_entrar": null, "texto": "Pequena, rápida e já chegando com as unhas de fora."},
+    {"id": "velha-dos-novelos", "nome": "Velha dos Novelos", "custo": 2, "atk": 2, "hp": 4, "keywords": [], "efeito_ao_entrar": [{"tipo": "comprar", "alvo": "nenhum", "valor": 1}], "texto": "Sempre tem um novelo (ou uma carta) guardado."},
+    {"id": "soneca-ancestral", "nome": "Soneca Ancestral", "custo": 2, "atk": 1, "hp": 5, "keywords": ["robusto"], "efeito_ao_entrar": [{"tipo": "energia", "alvo": "nenhum", "valor": 1}], "texto": "Dorme tão bem que sobra energia para os outros."},
+    {"id": "trovao-amarelo", "nome": "Trovão Amarelo", "custo": 3, "atk": 3, "hp": 3, "keywords": ["investida"], "efeito_ao_entrar": [{"tipo": "dano", "alvo": "inimigo_escolhido", "valor": 2}], "texto": "Chega rugindo e já acerta alguém."},
+    {"id": "guardiao-bigodudo", "nome": "Guardião Bigodudo", "custo": 3, "atk": 3, "hp": 7, "keywords": ["provocar"], "efeito_ao_entrar": [{"tipo": "cura", "alvo": "lider_proprio", "valor": 3}], "texto": "Muralha de pelo e bigode que cuida do dono."},
+    {"id": "mestre-das-garras", "nome": "Mestre das Garras", "custo": 4, "atk": 4, "hp": 4, "keywords": ["investida", "primeira-patada"], "efeito_ao_entrar": null, "texto": "Entra e já bate dobrado. Garras muito bem afiadas."},
+    {"id": "pelo-de-aco", "nome": "Pelo de Aço", "custo": 4, "atk": 4, "hp": 8, "keywords": ["provocar", "robusto"], "efeito_ao_entrar": null, "texto": "Nem as escovadas mais bravas amassam esse pelo."},
+    {"id": "gata-das-brasas", "nome": "Gata das Brasas", "custo": 5, "atk": 5, "hp": 5, "keywords": ["primeira-patada"], "efeito_ao_entrar": [{"tipo": "dano", "alvo": "lider_inimigo", "valor": 3}], "texto": "Olhar de brasa, miado de fim de jogo."}
+  ]
+}

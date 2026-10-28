@@ -1,0 +1,206 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "cats": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "breed": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sex": {
+            "enum": [
+              "M",
+              "F"
+            ]
+          },
+          "nature": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "iv_atk": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "iv_hp": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "stage": {
+            "enum": [
+              "kitten",
+              "adult"
+            ]
+          },
+          "rest_runs_left": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "runs_as_kitten": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "breed",
+          "sex",
+          "nature",
+          "iv_atk",
+          "iv_hp",
+          "stage",
+          "rest_runs_left",
+          "runs_as_kitten"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "deck": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+      },
+      "maxItems": 12
+    },
+    "coins": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "next_cat_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "breeding": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "male": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "female": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "runs_left": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "male",
+          "female",
+          "runs_left"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "pity": {
+      "type": "object",
+      "properties": {
+        "runs_without_high_iv": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "runs_without_high_iv"
+      ],
+      "additionalProperties": false
+    },
+    "progress": {
+      "type": "object",
+      "properties": {
+        "leagues_cleared": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "best_distance": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "records": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "leagues_cleared",
+        "best_distance",
+        "records"
+      ],
+      "additionalProperties": false
+    },
+    "dex": {
+      "type": "object",
+      "properties": {
+        "breeds_seen": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          }
+        },
+        "perfect_cats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          }
+        }
+      },
+      "required": [
+        "breeds_seen",
+        "perfect_cats"
+      ],
+      "additionalProperties": false
+    },
+    "items": {
+      "type": "object",
+      "properties": {
+        "nature_item": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "nature_item"
+      ],
+      "additionalProperties": false
+    },
+    "settings": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "cats",
+    "deck",
+    "coins",
+    "next_cat_id",
+    "breeding",
+    "pity",
+    "progress",
+    "dex",
+    "items",
+    "settings"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "save"
+}

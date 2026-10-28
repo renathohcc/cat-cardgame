@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "specials": [
+    {
+      "id": "espirito-exemplo",
+      "nome": "Espírito Exemplo",
+      "custo": 3,
+      "atk": 3,
+      "hp": 3,
+      "keywords": [
+        "provocar"
+      ],
+      "efeito_ao_entrar": null,
+      "texto": "Exemplo de formato."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "c-000123",
+  "breed": "siames",
+  "name": "Mingau",
+  "sex": "F",
+  "nature": "bravo",
+  "iv_atk": 6,
+  "iv_hp": 2,
+  "stage": "adult",
+  "rest_runs_left": 0,
+  "runs_as_kitten": 0
+}

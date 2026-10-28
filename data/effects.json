@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "effects": [
+    {"id": "arranhao-certeiro", "nome": "Arranhão Certeiro", "custo": 2, "texto": "Um arranhão bem dado. Ai.", "acoes": [{"tipo": "dano", "alvo": "inimigo_escolhido", "valor": 3}]},
+    {"id": "bote-no-lider", "nome": "Bote no Líder", "custo": 3, "texto": "Ignora Provocar: o bote vai direto ao dono.", "acoes": [{"tipo": "dano", "alvo": "lider_inimigo", "valor": 4}]},
+    {"id": "lambida-curativa", "nome": "Lambida Curativa", "custo": 1, "texto": "Limpinho e reconfortado.", "acoes": [{"tipo": "cura", "alvo": "aliado_escolhido", "valor": 3}]},
+    {"id": "soneca-no-sol", "nome": "Soneca no Sol", "custo": 2, "texto": "Nada cura como um raio de sol.", "acoes": [{"tipo": "cura", "alvo": "lider_proprio", "valor": 4}]},
+    {"id": "rugido-de-guerra", "nome": "Rugido de Guerra", "custo": 1, "texto": "Miau com muita convicção. Vale só neste turno.", "acoes": [{"tipo": "buff_atk", "alvo": "aliado_escolhido", "valor": 2, "duracao": "turno"}]},
+    {"id": "petisco-surpresa", "nome": "Petisco Surpresa", "custo": 1, "texto": "Achou um petisco no bolso. E uma carta.", "acoes": [{"tipo": "comprar", "alvo": "nenhum", "valor": 1}]},
+    {"id": "farejar-a-despensa", "nome": "Farejar a Despensa", "custo": 2, "texto": "Cheira daqui, cheira de lá, e olha o que apareceu.", "acoes": [{"tipo": "comprar", "alvo": "nenhum", "valor": 2}]},
+    {"id": "cochilo-revigorante", "nome": "Cochilo Revigorante", "custo": 1, "texto": "Um cochilo rápido rende mais que parece.", "acoes": [{"tipo": "energia", "alvo": "nenhum", "valor": 2}]}
+  ]
+}

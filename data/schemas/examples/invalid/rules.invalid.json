@@ -1,0 +1,42 @@
+{
+  "schema_version": 2,
+  "duel": {
+    "leader_hp": 20,
+    "slots": 5,
+    "initial_hand": 4,
+    "draw_per_turn": 1,
+    "hand_max": 7,
+    "energy_start": 2,
+    "energy_per_turn": 1,
+    "energy_cap": 7,
+    "deck_size": 12,
+    "first_player_no_attack_first_turn": true,
+    "draw_on_first_turn": true
+  },
+  "stats": {
+    "iv_min": 1,
+    "iv_max": 5,
+    "min_stat": 1,
+    "atk_iv_divisor": 2
+  },
+  "iv_weights": {
+    "1": null,
+    "2": null,
+    "3": null,
+    "4": null,
+    "5": null
+  },
+  "deadlock": {
+    "variation": [
+      -1,
+      0,
+      1
+    ],
+    "min_damage": 1
+  },
+  "breed": {
+    "mutation_chance": null,
+    "base_runs": 2,
+    "growth_runs": 2
+  }
+}

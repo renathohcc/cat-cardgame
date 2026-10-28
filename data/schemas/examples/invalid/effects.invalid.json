@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "effects": [
+    {
+      "id": "exemplo-dano",
+      "nome": "Exemplo de Dano",
+      "custo": 2,
+      "texto": "Causa 3 de dano a um inimigo.",
+      "acoes": [
+        {
+          "tipo": "roubar",
+          "alvo": "inimigo_escolhido",
+          "valor": 3
+        }
+      ]
+    }
+  ]
+}

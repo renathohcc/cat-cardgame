@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "keywords": [
+    {
+      "id": "provocar",
+      "nome": "Provocar",
+      "texto": "O adversário precisa derrotar este gato antes de atacar o Líder."
+    },
+    {
+      "id": "investida",
+      "nome": "Investida",
+      "texto": "Pode atacar no turno em que entra."
+    },
+    {
+      "id": "primeira-patada",
+      "nome": "Primeira Patada",
+      "texto": "Causa dano dobrado no primeiro ataque."
+    },
+    {
+      "id": "robusto",
+      "nome": "Robusto",
+      "texto": "Recupera 1 HP no fim de cada turno seu.",
+      "params": {
+        "cura": 1
+      }
+    }
+  ]
+}

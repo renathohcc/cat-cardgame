@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "draft_options": 3,
+  "draft_options_elite": 3,
+  "draft_options_rest": 2,
+  "drafts_elite": 2,
+  "rest_draft": true,
+  "pool": {
+    "effects": true,
+    "specials": true
+  },
+  "start_deck": {
+    "gatos": 12,
+    "origem": "sorteio"
+  },
+  "map": {
+    "layers": [
+      {
+        "nodes": [
+          {
+            "id": "c1-batalha",
+            "tipo": "masmorra",
+            "inimigo": "tonho-sem-sorte"
+          }
+        ]
+      },
+      {
+        "nodes": [
+          {
+            "id": "c2-batalha",
+            "tipo": "batalha",
+            "inimigo": "irmaos-pimenta"
+          },
+          {
+            "id": "c2-descanso",
+            "tipo": "descanso",
+            "inimigo": null
+          }
+        ]
+      },
+      {
+        "nodes": [
+          {
+            "id": "c3-batalha",
+            "tipo": "batalha",
+            "inimigo": "irmaos-pimenta"
+          }
+        ]
+      },
+      {
+        "nodes": [
+          {
+            "id": "c4-elite",
+            "tipo": "elite",
+            "inimigo": "berenice-da-matilha"
+          },
+          {
+            "id": "c4-batalha",
+            "tipo": "batalha",
+            "inimigo": "tonho-sem-sorte"
+          }
+        ]
+      },
+      {
+        "nodes": [
+          {
+            "id": "c5-descanso",
+            "tipo": "descanso",
+            "inimigo": null
+          }
+        ]
+      },
+      {
+        "nodes": [
+          {
+            "id": "c6-chefe",
+            "tipo": "chefe",
+            "inimigo": "madame-fifi-pelucia"
+          }
+        ]
+      }
+    ]
+  }
+}
