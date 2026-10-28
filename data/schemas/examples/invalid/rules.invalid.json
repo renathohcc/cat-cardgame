@@ -35,8 +35,13 @@
     "min_damage": 1
   },
   "breed": {
-    "mutation_chance": null,
+    "mutation_chance": 1.5,
     "base_runs": 2,
-    "growth_runs": 2
+    "growth_runs": 2,
+    "litter_min": 1,
+    "litter_max": 3,
+    "mother_breed_chance": 0.6,
+    "min_nodes_for_run_count": 1,
+    "min_adults_after_breed": 12
   }
 }

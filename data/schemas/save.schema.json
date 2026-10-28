@@ -137,7 +137,18 @@
             "cats": {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/cat"
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/cat"
+                  },
+                  {
+                    "properties": {
+                      "stage": {
+                        "const": "adult"
+                      }
+                    }
+                  }
+                ]
               }
             },
             "result": {

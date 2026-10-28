@@ -5,7 +5,7 @@ So chama a API publica do core (`available_cats`, `set_deck`, `autofill_deck`, `
 
 Elementos clicaveis (`elem`):
     ("row", cat_id)  ("scroll", +-1)  ("sort", chave)  ("filter",)  ("rename",)
-    ("complete",)  ("clear",)  ("start",)  ("back",)  ("rename_ok",)  ("rename_cancel",)
+    ("complete",)  ("clear",)  ("start",)  ("back",)  ("breed",)  ("rename_ok",)  ("rename_cancel",)
 """
 from __future__ import annotations
 
@@ -17,15 +17,16 @@ from core import (SaveData, autofill_deck, available_cats, can_donate, cat_stats
                   donate_cat,
                   donation_value, get_cat, new_run_from_save, rename_cat, save_deck_draft,
                   set_deck)
-from core.run import Run
-from core.types import Cat, Content, IllegalAction, Stats
+from core import Cat, Content, Run, Stats, breed_cfg
+from core.types import IllegalAction
 from ui import layout_hub as LH
 from ui.controller import Toast
 
 SORT_LABEL = {"poder": "PODER", "raca": "RAÇA", "nome": "NOME"}
-STATE_LABEL = {"deck": "deck", "livre": "livre", "filhote": "filh", "descanso": "desc"}
+STATE_LABEL = {"deck": "deck", "livre": "livre", "filhote": "filh", "descanso": "desc",
+               "breed": "brd"}
 STATE_LONG = {"deck": "No deck", "livre": "Disponível", "filhote": "Filhote",
-              "descanso": "Em descanso"}
+              "descanso": "Em descanso", "breed": "Em breed"}
 Persist = Callable[[], "str | None"]     # grava o save; devolve texto de erro ou None
 
 
@@ -33,9 +34,10 @@ Persist = Callable[[], "str | None"]     # grava o save; devolve texto de erro o
 class CatRow:
     cat: Cat
     stats: Stats
-    state: str            # deck | livre | filhote | descanso
+    state: str            # deck | livre | filhote | descanso | breed
     label: str            # nome do gato ou, sem nome, o nome da raca
     breed: str
+    runs_left: int = 0    # breed: runs ate a ninhada; filhote: runs ate virar adulto
 
 
 class CollectionController:
@@ -89,16 +91,50 @@ class CollectionController:
         ids = self.content.breeds.get(cat.breed, {}).get("keywords", [])
         return [(k, self.content.keywords.get(k, {}).get("nome", k)) for k in ids]
 
+    def runs_left_of(self, cat: Cat) -> int:
+        """Runs que faltam: ate a ninhada (casal em breed) ou ate virar adulto (filhote)."""
+        if cat.stage == "kitten":
+            return max(0, breed_cfg(self.content)["growth_runs"] - cat.runs_as_kitten)
+        for b in self.save.breeding:
+            if cat.id in (b["male"], b["female"]):
+                return b["runs_left"]
+        return 0
+
+    def in_breed(self, cat: Cat) -> bool:
+        return any(cat.id in (b["male"], b["female"]) for b in self.save.breeding)
+
     def state_of(self, cat: Cat) -> str:
         if cat.stage == "kitten":
             return "filhote"
+        if self.in_breed(cat):
+            return "breed"
         if cat.rest_runs_left > 0:
             return "descanso"
         return "deck" if cat.id in self.picked else "livre"
 
     def row_of(self, cat: Cat) -> CatRow:
         breed = self.breed_name(cat)
-        return CatRow(cat, cat_stats(self.content, cat), self.state_of(cat), cat.name or breed, breed)
+        state = self.state_of(cat)
+        left = self.runs_left_of(cat) if state in ("breed", "filhote") else 0
+        return CatRow(cat, cat_stats(self.content, cat), state, cat.name or breed, breed, left)
+
+    def state_text(self, row: CatRow) -> str:
+        """Texto curto da coluna de estado: "brd2" / "filh2" (com as runs que faltam)."""
+        base = STATE_LABEL[row.state]
+        return f"{base}{row.runs_left}" if row.state in ("breed", "filhote") else base
+
+    def state_long_text(self, row: CatRow) -> str:
+        n = row.runs_left
+        if row.state == "breed":
+            return f"Em breed: falta{'m' if n != 1 else ''} {n} run{'s' if n != 1 else ''}"
+        if row.state == "filhote":
+            return f"Filhote: falta{'m' if n != 1 else ''} {n} run{'s' if n != 1 else ''}"
+        return STATE_LONG[row.state]
+
+    def refresh_deck(self) -> None:
+        """Depois de mexer no Criatorio: tira do rascunho os gatos que ficaram indisponiveis."""
+        ok = {c.id for c in available_cats(self.save)}
+        self.picked = [i for i in self.picked if i in ok]
 
     def breeds_present(self) -> list[str]:
         present = {c.breed for c in self.save.cats}
@@ -213,6 +249,8 @@ class CollectionController:
                 return "start" if self.can_start else self._not_ready()
             elif kind == "back":
                 return "back"
+            elif kind == "breed":
+                return "breed"
         except IllegalAction as e:
             self.say(str(e))
         return None
@@ -239,7 +277,10 @@ class CollectionController:
         cat = get_cat(self.save, cat_id)
         self.selected = cat_id
         if cat.stage == "kitten":
-            self.say("Filhote ainda não pode entrar no deck.")
+            n = self.runs_left_of(cat)
+            self.say(f"Filhote não entra no deck: falta{'m' if n != 1 else ''} {n} run{'s' if n != 1 else ''}.")
+        elif self.in_breed(cat):
+            self.say(f"Gato em breed, indisponível (faltam {self.runs_left_of(cat)} runs).")
         elif cat.rest_runs_left > 0:
             self.say("Gato em descanso, indisponível.")
         elif cat_id in self.picked:

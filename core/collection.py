@@ -39,8 +39,9 @@ def _is_available(cat: Cat) -> bool:
 
 
 def available_cats(save: SaveData) -> list[Cat]:
-    """Adultos fora de descanso, na ordem da colecao."""
-    return [c for c in save.cats if _is_available(c)]
+    """Adultos fora de descanso e fora de breed, na ordem da colecao."""
+    busy = {i for b in save.breeding for i in (b["male"], b["female"])}
+    return [c for c in save.cats if _is_available(c) and c.id not in busy]
 
 
 def _check_ids(save: SaveData, ids: list[str]) -> None:

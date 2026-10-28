@@ -1,21 +1,75 @@
 """Cenas de screenshot/demo do hub. Tudo em memoria (sem tocar em disco)."""
 from __future__ import annotations
 
+from dataclasses import replace
 from random import Random
 
-from core import create_adoption, new_game
-from ui import layout_hub as LH
+from core import RunAftermath, available_cats, create_adoption, new_game
+from core.save import format_cat_id
+from ui import layout_breed as LB, layout_hub as LH
+from ui.breed_controller import NewsController
 from ui.controller import load_game_content
 from ui.hub_controller import HubController
 from ui.render import UIState
 
 HUB_SCENES = ("menu", "menu_confirmar", "menu_corrompido", "colecao", "colecao_deck",
               "renomear", "resultado", "adocao", "adocao_vazia", "doar_confirmar")
+BREED_SCENES = ("criatorio", "criatorio_casal", "criatorio_recusado", "novidades")
+ALL_SCENES = HUB_SCENES + BREED_SCENES
+
+
+def _breed_scene(hub: HubController, ui: UIState, name: str, seed: int) -> None:
+    """Save com 18 adultos (sobra para o breed), um casal em breed, um quase pronto e filhotes."""
+    content, save = hub.content, hub.save
+    base = list(save.cats)
+    for k in range(6):
+        c = replace(base[k], id=format_cat_id(save.next_cat_id), name=None,
+                    sex="M" if k % 2 == 0 else "F", rest_runs_left=0)
+        save.next_cat_id += 1
+        save.cats.append(c)
+    adults = [c for c in save.cats if c.stage == "adult"]
+    males = [c for c in adults if c.sex == "M"]
+    females = [c for c in adults if c.sex == "F"]
+    males[0].name, females[0].name = "Mingau", "Pipoca"
+    save.breeding = [{"male": males[1].id, "female": females[1].id, "runs_left": 2},
+                     {"male": males[2].id, "female": females[2].id, "runs_left": 1}]
+    save.deck = []
+    for i in range(2):
+        k = replace(base[i], id=format_cat_id(save.next_cat_id), name=None, stage="kitten",
+                    runs_as_kitten=i, iv_atk=5 - i, iv_hp=4)
+        save.next_cat_id += 1
+        save.cats.append(k)
+    if name == "novidades":
+        born = [replace(base[0], id=format_cat_id(save.next_cat_id + i), name=None, stage="kitten",
+                        sex="MF"[i % 2], iv_atk=a, iv_hp=h)
+                for i, (a, h) in enumerate(((5, 5), (4, 4), (2, 3)))]
+        save.next_cat_id += 3
+        save.cats.extend(born)
+        grown = [c for c in save.cats if c.stage == "kitten"][:2]
+        hub.news = NewsController(content, save, RunAftermath(
+            born=born, grown=grown, couples_done=[(males[2].id, females[2].id)]))
+        hub.mode = "novidades"
+        ui.mouse = LB.news_button().center
+        return
+    hub.open_breed()
+    bc = hub.breed
+    if name == "criatorio_casal":
+        bc.sel = {"M": males[0].id, "F": females[0].id}
+        ui.mouse = LB.action_buttons()["start"].center
+    elif name == "criatorio_recusado":
+        keep = {males[0].id, females[0].id}
+        extra = [c for c in available_cats(save) if c.id not in keep]
+        drop = {c.id for c in extra[11 - 0:]}      # sobram 13 livres: o core recusa
+        save.cats[:] = [c for c in save.cats if c.id not in drop]
+        bc.sel = {"M": males[0].id, "F": females[0].id}
+        ui.mouse = LB.action_buttons()["start"].center
+    else:
+        ui.mouse = LB.row_rect("M", 1).center
 
 
 def make(seed: int, name: str) -> tuple[HubController, UIState]:
-    if name not in HUB_SCENES:
-        raise SystemExit(f"cena desconhecida: {name} (use: {', '.join(HUB_SCENES)})")
+    if name not in ALL_SCENES:
+        raise SystemExit(f"cena desconhecida: {name} (use: {', '.join(ALL_SCENES)})")
     content = load_game_content()
     hub = HubController(content, None, seed, ai_delay=0.0)
     ui = UIState(t=0.2)
@@ -25,6 +79,9 @@ def make(seed: int, name: str) -> tuple[HubController, UIState]:
         return hub, ui
     hub.adopt_save(new_game(content, Random(seed)))
     hub.has_file = True
+    if name in BREED_SCENES:
+        _breed_scene(hub, ui, name, seed)
+        return hub, ui
     if name == "menu":
         ui.mouse = LH.menu_button(0).center
     elif name == "menu_confirmar":

@@ -4,7 +4,7 @@ So chama a API publica do core (`new_game`, `read_save`, `write_save`) e delega 
 `CollectionController` e a run ao `RunController`. O save so e gravado entre runs: nada de
 retomar run (fechar a janela no meio da run = run perdida, o save fica como estava).
 
-Modos: "menu" | "colecao" | "run" | "adocao" | "resultado".
+Modos: "menu" | "colecao" | "criatorio" | "run" | "novidades" | "adocao" | "resultado".
 Elementos do menu: ("menu", "continue"|"new_game"|"quit") ("confirm_yes",) ("confirm_no",)
 Resultado: ("result_back",)
 """
@@ -14,16 +14,18 @@ import os
 from pathlib import Path
 from random import Random
 
-from core import (SaveData, create_adoption, has_pending_adoption, new_game, read_save,
-                  write_save)
+from core import (SaveData, advance_after_run, create_adoption, has_pending_adoption, new_game,
+                  read_save, write_save)
+from core import Content, breed_cfg
 from core.types import IllegalAction
-from core.types import Content
 from ui import layout_hub as LH
 from ui.adoption_controller import AdoptionController
+from ui.breed_controller import BreedController, NewsController
 from ui.collection_controller import CollectionController
 from ui.controller import Toast
 from ui.run_controller import RunController
 
+SHORT_RUN_TEXT = "Run curta: não conta para o breed"
 DEFAULT_SAVE = Path(__file__).resolve().parent.parent / "saves" / "save.json"
 
 
@@ -39,6 +41,9 @@ class HubController:
         self.col: CollectionController | None = None
         self.rc: RunController | None = None
         self.adopt: AdoptionController | None = None
+        self.breed: BreedController | None = None
+        self.news: NewsController | None = None
+        self.short_run = False                    # ultima run nao contou para o breed
         self.load_error: str | None = None        # texto do erro quando o save esta corrompido
         self.has_file = False
         self.confirm_new = False
@@ -119,6 +124,10 @@ class HubController:
             return self.col.hit(pos)
         if m == "adocao":
             return self.adopt.hit(pos)
+        if m == "criatorio":
+            return self.breed.hit(pos)
+        if m == "novidades":
+            return self.news.hit(pos)
         return LH.hit_test(pos, m)
 
     def click(self, elem: tuple | None) -> None:
@@ -134,6 +143,14 @@ class HubController:
                 self.mode = "menu"
             elif act == "start":
                 self.start_run()
+            elif act == "breed":
+                self.open_breed()
+        elif m == "criatorio":
+            if self.breed.click(elem) == "back":
+                self.close_breed()
+        elif m == "novidades":
+            if self.news.click(elem) == "done":
+                self._finish_news()
         elif m == "adocao":
             if self.adopt.click(elem) == "done":
                 self._finish_adoption()
@@ -179,8 +196,24 @@ class HubController:
         if self.save is None or not has_pending_adoption(self.save):
             return False
         self.adopt = AdoptionController(self.content, self.save, self.persist)
+        self.adopt.note = SHORT_RUN_TEXT if self.short_run else ""
         self.mode = "adocao"
         return True
+
+    def open_breed(self) -> None:
+        self.breed = BreedController(self.content, self.save, self.persist)
+        self.mode = "criatorio"
+
+    def close_breed(self) -> None:
+        self.breed = None
+        self.mode = "colecao"
+        self.col.refresh_deck()          # pais em breed saem do rascunho do deck
+
+    def _finish_news(self) -> None:
+        self.news = None
+        if self.open_pending_adoption():
+            return
+        self.mode = "resultado"
 
     def _finish_adoption(self) -> None:
         toast = self.adopt.toast if self.adopt else None
@@ -224,6 +257,10 @@ class HubController:
         elif m == "run" and self.rc:
             self.rc.cancel()
             self._check_run_end()
+        elif m == "criatorio":
+            self.close_breed()
+        elif m == "novidades":
+            self._finish_news()
         elif m == "adocao":
             self.adopt = None            # a oferta fica no save; "Continuar" reabre
             self.mode = "menu"
@@ -238,6 +275,8 @@ class HubController:
         elif m == "run" and self.rc:
             self.rc.confirm_key()
             self._check_run_end()
+        elif m == "novidades":
+            self._finish_news()
         elif m == "resultado":
             self.mode = "colecao"
 
@@ -252,6 +291,9 @@ class HubController:
     def scroll(self, n: int) -> None:
         if self.mode == "adocao":
             self.adopt.scroll_by(n)
+        if self.mode == "criatorio":
+            self.breed.scroll_by("M", n)
+            self.breed.scroll_by("F", n)
         if self.mode == "colecao" and not self.col.editing:
             self.col.scroll_by(n)
 
@@ -269,12 +311,16 @@ class HubController:
         self.result_win = win
         self.result_text = f"Run encerrada: {'vitória' if win else 'derrota'}, nós vencidos {n}"
         self.result_detail = []
+        self.short_run = n < breed_cfg(self.content)["min_nodes_for_run_count"]
         if rc.abandoned:
             self.result_detail.append("Você abandonou a run (conta como derrota).")
         elif rc.end_line:
             self.result_detail.append(f"{rc.end_line[0]}: \"{rc.end_line[1]}\"")
         result = "abandono" if rc.abandoned else rc.run.result
         self.rc = None
+        # ordem fixa: breed/crescimento -> adocao -> UM unico write_save
+        aftermath = advance_after_run(self.content, self.save,
+                                      Random(self.seed * 104729 + self.runs_started), n)
         try:
             create_adoption(self.content, self.save, Random(self.seed * 7919 + self.runs_started),
                             result, n)
@@ -283,6 +329,10 @@ class HubController:
         err = self.persist()            # UM unico write_save
         if err:
             self.say(f"Não consegui salvar: {err}")
+        if aftermath.born or aftermath.grown:
+            self.news = NewsController(self.content, self.save, aftermath)
+            self.mode = "novidades"
+            return
         if self.open_pending_adoption():
             return
         self.result_detail.append("Nenhum gato para adotar desta vez")
@@ -298,6 +348,8 @@ class HubController:
             self.col.update(dt)
         if self.adopt:
             self.adopt.update(dt)
+        if self.breed:
+            self.breed.update(dt)
         if self.mode == "run" and self.rc:
             self.rc.update(dt)
             self._check_run_end()

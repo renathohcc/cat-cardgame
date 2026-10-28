@@ -2,6 +2,8 @@
 from core.adoption import (adopt, adoption_count, adoption_weights, create_adoption,
                            can_donate, donate_cat, donate_offer, donation_value,
                            has_pending_adoption)
+from core.breeding import (RunAftermath, advance_after_run, breeding_status,
+                           breed_cfg, cancel_breed, can_breed, start_breed)
 from core.cats import cat_stats, roll_cat
 from core.collection import (autofill_deck, available_cats, deck_cats, get_cat,
                              rename_cat, save_deck_draft, set_deck)
@@ -16,4 +18,6 @@ __all__ = ["load_content", "roll_cat", "cat_stats", "Cat", "Content", "Stage", "
            "save_from_dict", "write_save", "read_save", "rename_cat", "available_cats",
            "set_deck", "autofill_deck", "deck_cats", "get_cat", "save_deck_draft",
            "adoption_weights", "adoption_count", "donation_value", "create_adoption",
-           "adopt", "donate_offer", "donate_cat", "can_donate", "has_pending_adoption"]
+           "adopt", "donate_offer", "donate_cat", "can_donate", "has_pending_adoption",
+           "RunAftermath", "advance_after_run", "breeding_status", "cancel_breed",
+           "can_breed", "start_breed", "breed_cfg"]

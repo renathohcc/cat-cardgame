@@ -11,7 +11,8 @@ from typing import Callable
 
 from core import (SaveData, adopt, cat_stats, donate_offer, donation_value,
                   has_pending_adoption)
-from core.types import Cat, Content, IllegalAction, Stats
+from core import Cat, Content, Stats
+from core.types import IllegalAction
 from ui import layout_hub as LH
 from ui.controller import Toast
 
@@ -24,6 +25,7 @@ class AdoptionController:
         self.save = save
         self.persist = persist
         self.page = 0
+        self.note = ""            # aviso de cabecalho (ex.: "Run curta: nao conta para o breed")
         self.revealed: set[str] = set()
         self.toast: Toast | None = None
         self.high_sum = int((content.rules.get("adoption") or {}).get("high_iv_sum", 8))

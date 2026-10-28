@@ -5,14 +5,15 @@ import pygame
 
 from ui import font, layout_hub as LH
 from ui.adoption_controller import AdoptionController
-from ui.collection_controller import STATE_LABEL, STATE_LONG, CollectionController
-from ui.hub_controller import HubController
+from ui.collection_controller import CollectionController
+from ui.hub_controller import SHORT_RUN_TEXT, HubController
 from ui.render import UIState, border, outlined, pulse, stars, tint
 from ui.render_run import draw_run_frame, mix
 from ui.theme import BREED_COLOR, C, DEFAULT_BREED_COLOR, H, KEYWORD_COLOR, NATURE_COLOR, W
 
 WHITE = (255, 255, 255)
-STATE_COLOR = {"deck": C["good"], "livre": C["dim"], "filhote": C["female"], "descanso": C["warn"]}
+STATE_COLOR = {"deck": C["good"], "livre": C["dim"], "filhote": C["female"], "descanso": C["warn"],
+               "breed": C["warn"]}
 
 
 def button(surf: pygame.Surface, r: pygame.Rect, label: str, mouse, enabled: bool = True,
@@ -130,7 +131,7 @@ def draw_row(surf: pygame.Surface, col: CollectionController, row, i: int, ui: U
     w = font.draw(surf, str(st.atk), r.x + LH.COL_STATS, cy, C["atk"])
     w2 = font.draw(surf, "/", r.x + LH.COL_STATS + w + 1, cy, C["dim"])
     font.draw(surf, str(st.hp), r.x + LH.COL_STATS + w + w2 + 2, cy, C["hp"])
-    font.draw(surf, STATE_LABEL[row.state], r.x + LH.COL_STATE, cy, STATE_COLOR[row.state])
+    font.draw(surf, col.state_text(row), r.x + LH.COL_STATE, cy, STATE_COLOR[row.state])
 
 
 def draw_scrollbar(surf: pygame.Surface, col: CollectionController, ui: UIState) -> None:
@@ -193,9 +194,7 @@ def draw_detail(surf: pygame.Surface, col: CollectionController, ui: UIState) ->
         chip(surf, cx, y, w, KEYWORD_COLOR.get(kid, C["dim"]), nome.upper(), C["dark"])
         cx += w + 2
     y += 14
-    font.draw(surf, STATE_LONG[row.state], x, y, STATE_COLOR[row.state])
-    if cat.stage == "kitten":
-        pass
+    font.draw(surf, font.fit(col.state_long_text(row), d.w - 12), x, y, STATE_COLOR[row.state])
     rb = LH.rename_button()
     quiet = col.editing or col.confirm_donate
     button(surf, rb, "RENOMEAR", (-100, -100) if quiet else ui.mouse)
@@ -220,6 +219,7 @@ def draw_collection(surf: pygame.Surface, col: CollectionController, ui: UIState
     button(surf, b["clear"], "LIMPAR", m, base=(96, 44, 52))
     button(surf, b["start"], "INICIAR RUN", m, enabled=col.can_start)
     button(surf, b["back"], "MENU (ESC)", m, base=C["card"])
+    button(surf, b["breed"], "CRIATÓRIO", m, base=(96, 70, 120))
     font.draw(surf, font.fit(col.hint(), 318), LH.LIST_X, 252, C["dim"])
     if col.editing:
         draw_rename(surf, col, ui)
@@ -274,6 +274,8 @@ def draw_adoption(surf: pygame.Surface, ad: AdoptionController, ui: UIState) -> 
     n = len(ad.cats())
     font.draw(surf, f"{ad.summary()}. Adotar ou doar cada gato.", 4, 26, C["dim"])
     font.draw(surf, f"Restam {n}", 476, 26, C["text"], 1, "right")
+    if ad.note:
+        font.draw(surf, ad.note, 476, 17, C["warn"], 1, "right")
     for i, cat in enumerate(ad.visible()):
         if cat.id in ad.revealed:
             draw_offer_card(surf, ad, cat, i, ui)
@@ -353,6 +355,8 @@ def draw_offer_card(surf: pygame.Surface, ad: AdoptionController, cat, i: int, u
 def draw_result(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
     col = C["good"] if hub.result_win else C["bad"]
     outlined(surf, "RUN ENCERRADA", W // 2, 36, col, 3, "center")
+    if hub.short_run:
+        font.draw(surf, SHORT_RUN_TEXT, W // 2, 66, C["warn"], 1, "center")
     p = pygame.Rect(40, 84, W - 80, 100)
     panel(surf, p)
     for k, ln in enumerate(font.wrap(hub.result_text, p.w - 16)):
@@ -395,5 +399,11 @@ def draw_hub_frame(surf: pygame.Surface, hub: HubController, ui: UIState) -> Non
         draw_collection(surf, hub.col, ui)
     elif hub.mode == "adocao":
         draw_adoption(surf, hub.adopt, ui)
+    elif hub.mode == "criatorio":
+        from ui.render_breed import draw_breed
+        draw_breed(surf, hub.breed, ui)
+    elif hub.mode == "novidades":
+        from ui.render_breed import draw_news
+        draw_news(surf, hub.news, ui)
     else:
         draw_result(surf, hub, ui)

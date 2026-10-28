@@ -139,6 +139,7 @@ def check_run(docs: dict[str, dict]) -> int:
     if meta["name_max_length"] < 1:
         fail("meta.name_max_length < 1")
     errors += check_adoption(docs["rules"])
+    errors += check_breed(docs["rules"])
     if not errors:
         print("ok run")
     return errors
@@ -171,6 +172,28 @@ def check_adoption(rules: dict) -> int:
         fail("high_iv_sum fora de 2-10")
     if ad["pity_runs"] < 1:
         fail("pity_runs < 1")
+    return errors
+
+
+def check_breed(rules: dict) -> int:
+    br = rules["breed"]
+    errors = 0
+
+    def fail(msg: str) -> None:
+        nonlocal errors
+        print(f"FALHA breed: {msg}")
+        errors += 1
+
+    if not 1 <= br["litter_min"] <= br["litter_max"]:
+        fail("litter_min deve ser >= 1 e <= litter_max")
+    for key in ("mother_breed_chance", "mutation_chance"):
+        if not 0 <= br[key] <= 1:
+            fail(f"{key} fora de 0-1")
+    for key in ("base_runs", "growth_runs"):
+        if br[key] < 1:
+            fail(f"{key} < 1")
+    if br["min_adults_after_breed"] < rules["duel"]["deck_size"]:
+        fail("min_adults_after_breed < duel.deck_size")
     return errors
 
 

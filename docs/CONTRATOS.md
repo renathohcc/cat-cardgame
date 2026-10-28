@@ -266,7 +266,13 @@ save_deck_draft(save, cat_ids, content=None)               # deck de 0 a 12 ids 
 roll_cat(..., iv_weights=None)
 ```
 Pity: contador `pity.runs_without_high_iv` só anda em runs cuja oferta tem >= 1 gato (oferta vazia não conta nem dispara): sobe 1 se nenhum gato tem soma de IVs >= 8 e zera se algum tem; com contador >= 5 o pity troca o gato de menor soma (empate: o primeiro da lista) por um alto, nunca cria gato em oferta vazia. `can_donate(content, save, cat_id) -> (bool, motivo)` é a consulta usada pela UI. `donate_cat` recusa gato em `breeding` e doação que deixe < 12 adultos disponíveis. `dex` atualizado em `new_game` e `adopt`. A UI chama `create_adoption` ao fim da run com `run.result` e `run.nodes_cleared`.
-**5c (pendente):** `breed(...)`, `age_cats_after_run(...)`.
+**5c (core feito, 2026-10-28):** `core/breeding.py`; `rules.breed` = `mutation_chance` 0.07, `base_runs` 2, `growth_runs` 2, `litter_min` 1, `litter_max` 3, `mother_breed_chance` 0.6, `min_nodes_for_run_count` 1, `min_adults_after_breed` 12.
+```
+can_breed(content, save, male_id, female_id) -> (bool, motivo) ; start_breed(content, save, male_id, female_id)
+advance_after_run(content, save, rng, nodes_cleared) -> RunAftermath(born, grown, couples_done)   # chamar ANTES de create_adoption; uma gravação só
+breeding_status(save) ; cancel_breed(content, save, male_id, female_id)   # só se runs_left == base_runs
+```
+Regras: casal = 1 macho + 1 fêmea adultos disponíveis (tira os pais do deck; só inicia se sobrarem >= 12 adultos disponíveis fora do casal, ou seja, 14 disponíveis); só conta como run para o tempo de breed e crescimento a run com >= 1 nó vencido; no avanço, filhotes existentes ganham +1 run (viram adultos ao chegar em `growth_runs`) e depois cada casal perde 1 run e, ao zerar, nasce a ninhada (os recém-nascidos não envelhecem na mesma chamada); filhote: raça da mãe 60% / do pai 40%, sexo 50/50, natureza sorteada, cada IV de um dos pais 50/50 com 7% de +1 (teto 5); os pais voltam a ficar disponíveis mas não ao deck; `available_cats` exclui gatos em breed.
 
 ### 2.6 CLI
 `python -m core.cli` é o único lugar que imprime e lê entrada.

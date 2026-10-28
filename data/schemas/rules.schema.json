@@ -197,30 +197,49 @@
       "type": "object",
       "properties": {
         "mutation_chance": {
-          "oneOf": [
-            {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "mother_breed_chance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "base_runs": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 1
         },
         "growth_runs": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 1
+        },
+        "litter_min": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "litter_max": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "min_nodes_for_run_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "min_adults_after_breed": {
+          "type": "integer",
+          "minimum": 1
         }
       },
       "required": [
         "mutation_chance",
         "base_runs",
-        "growth_runs"
+        "growth_runs",
+        "litter_min",
+        "litter_max",
+        "mother_breed_chance",
+        "min_nodes_for_run_count",
+        "min_adults_after_breed"
       ],
       "additionalProperties": false
     },

@@ -32,7 +32,7 @@ def main(argv: list[str] | None = None) -> int:
         os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
         os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
         os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
-        from ui.scenes_hub import HUB_SCENES
+        from ui.scenes_hub import ALL_SCENES as HUB_SCENES
         from ui.scenes_run import RUN_SCENES
         if args.cena in HUB_SCENES:
             from ui.app_hub import screenshot as hub_shot

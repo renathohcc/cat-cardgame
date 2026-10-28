@@ -37,9 +37,14 @@
     "stall_rounds": 5
   },
   "breed": {
-    "mutation_chance": null,
+    "mutation_chance": 0.07,
     "base_runs": 2,
-    "growth_runs": 2
+    "growth_runs": 2,
+    "litter_min": 1,
+    "litter_max": 3,
+    "mother_breed_chance": 0.6,
+    "min_nodes_for_run_count": 1,
+    "min_adults_after_breed": 12
   },
   "meta": {
     "start_cats": 12,

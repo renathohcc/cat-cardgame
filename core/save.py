@@ -190,12 +190,26 @@ def save_from_dict(d: Any, content: Content | None = None) -> SaveData:
             raise ValueError(f"save invalido: deck usa gato inexistente {cid!r}")
         if cat.stage != "adult":
             raise ValueError(f"save invalido: deck usa filhote '{cid}'")
+    in_couple: set[str] = set()
     for i, b in enumerate(d["breeding"]):
         if not isinstance(b, dict) or set(b) != {"male", "female", "runs_left"}:
             raise ValueError(f"save invalido: breeding[{i}] malformado")
         if b["male"] not in by_id or b["female"] not in by_id:
             raise ValueError(f"save invalido: breeding[{i}] usa gato inexistente")
         _int(b["runs_left"], f"breeding[{i}].runs_left", 0)
+        m, f = by_id[b["male"]], by_id[b["female"]]
+        if m.sex != "M" or f.sex != "F":
+            raise ValueError(f"save invalido: breeding[{i}] sem macho e femea")
+        if m.stage != "adult" or f.stage != "adult":
+            raise ValueError(f"save invalido: breeding[{i}] com filhote")
+        for cid in (m.id, f.id):
+            if cid in in_couple:
+                raise ValueError(f"save invalido: gato '{cid}' em mais de um casal")
+            in_couple.add(cid)
+    for cid in deck:
+        if cid in in_couple:
+            raise ValueError(f"save invalido: gato '{cid}' esta no deck e em um casal "
+                             "de criatorio ao mesmo tempo")
     next_id = _int(d["next_cat_id"], "next_cat_id", 1)
     pending = _pending_from_dict(d.get("pending_adoption"), content, by_id)
     all_ids = list(by_id)

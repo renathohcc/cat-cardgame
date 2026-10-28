@@ -96,7 +96,8 @@ def action_buttons() -> dict[str, pygame.Rect]:
     return {"complete": pygame.Rect(326, 176, 73, 18),
             "clear": pygame.Rect(403, 176, 73, 18),
             "start": pygame.Rect(326, 198, 150, 24),
-            "back": pygame.Rect(326, 228, 150, 16)}
+            "back": pygame.Rect(326, 228, 72, 16),
+            "breed": pygame.Rect(402, 228, 74, 16)}
 
 
 # ------------------------------------------------------------------ renomear
