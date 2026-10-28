@@ -8,7 +8,8 @@ from pathlib import Path
 import pygame
 
 from ui import layout as L, scenes_hub
-from ui.app import DRAG_THRESHOLD, START_SIZE, render_scaled
+from ui.app import DRAG_THRESHOLD
+from ui.display import Display
 from ui.controller import load_game_content
 from ui.hub_controller import DEFAULT_SAVE, HubController
 from ui.render import UIState
@@ -28,8 +29,7 @@ def screenshot(path: str, seed: int, scene: str) -> None:
 
 async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str | None = None) -> None:
     pygame.init()
-    pygame.display.set_caption("Gatos")
-    pygame.display.set_mode(START_SIZE, pygame.RESIZABLE)
+    disp = Display()
     clock = pygame.time.Clock()
     if scene:
         hub, ui = scenes_hub.make(seed, scene)
@@ -41,7 +41,7 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
     pygame.key.start_text_input()
 
     def internal(pos: tuple[int, int]) -> tuple[int, int]:
-        return L.to_internal(pos, pygame.display.get_surface().get_size())
+        return disp.to_internal(pos)
 
     running = True
     while running and not hub.wants_quit:
@@ -55,6 +55,8 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
                 hub.text_input(ev.text)
             elif ev.type == pygame.MOUSEWHEEL:
                 hub.scroll(-ev.y)
+            elif disp.handle_key(ev):
+                pass
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
                     hub.key_escape()
@@ -63,8 +65,6 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
                     hub.key_enter()
                 elif ev.key == pygame.K_BACKSPACE:
                     hub.backspace()
-                elif ev.key == pygame.K_F11:
-                    pygame.display.toggle_fullscreen()
                 elif ev.key in (pygame.K_UP, pygame.K_DOWN) and hub.mode == "colecao":
                     hub.scroll(-1 if ev.key == pygame.K_UP else 1)
                 elif duel is not None and ev.key == pygame.K_SPACE:
@@ -108,7 +108,7 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
         hub.update(dt)
         ui.t += dt
         draw_hub_frame(canvas, hub, ui)
-        render_scaled(canvas, pygame.display.get_surface())
+        disp.render(canvas)
         pygame.display.flip()
         await asyncio.sleep(0)
     pygame.quit()

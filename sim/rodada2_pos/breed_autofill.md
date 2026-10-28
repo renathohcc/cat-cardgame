@@ -1,0 +1,81 @@
+# Balanceamento, rodada 2 (T6.0): seeds [1, 2, 3], 1000 duelos por celula por seed
+
+IA simples dos dois lados; sem cartas de efeito nos duelos de decks (as runs incluem drafts de efeitos e Espiritos escolhidos ao acaso). Valem para essa IA, nao para um humano. Dados atuais = pacote B ja aplicado.
+
+## Tema 4: gato perfeito por breed (seeds [1, 2, 3], 20 jogadores por seed, 100 runs cada)
+
+Modelo: jogador novo (12 gatos sorteados) joga runs completas da IA (mapa e draft ao acaso), adota todos os gatos oferecidos e monta o deck pelo `autofill_deck` do core (maior ATK+HP final, sem limite por raca). Estrategias: **nenhuma** = nunca faz breed (so adocao); **simples** = um casal por vez, o macho e a femea de maior soma de IV; **otima** = ate 3 casais ao mesmo tempo, escolhidos por P(filhote 5/5) e soma esperada. Nada e doado. Pais saem do deck durante o breed (como no jogo). Adocao com pity e deslocamento de pesos por nos vencidos (dados atuais):
+
+| Nos vencidos | Gatos (derrota) | Gatos (vitoria) | P(IV 5) por IV | P(gato 5/5) |
+|---|---|---|---|---|
+| 0 | 0 | 2 | 5.0% | 0.3% |
+| 1 | 0 | 2 | 7.0% | 0.5% |
+| 2 | 1 | 3 | 9.0% | 0.8% |
+| 3 | 1 | 3 | 11.0% | 1.2% |
+| 4 | 2 | 4 | 13.0% | 1.7% |
+| 5 | 2 | 4 | 15.0% | 2.2% |
+| 6 | 3 | 5 | 17.0% | 2.9% |
+
+Variantes:
+
+- `base`: Mutacao 7%, ninhada 1-3, breed 2 runs (dados atuais)
+
+### 4.1 Estrategia nenhuma
+
+Colunas: jogadores com o 1o 5/5 de qualquer origem ate a run 30 / 100 e mediana da run; idem so por adocao (inclui os gatos iniciais); 1o par de pais 5/5 (macho e femea adultos) ate 30 / 100 e mediana; 5/5 nascidos de breed ate 100; deck inteiro de 12 gatos 5/5 (ate 100 e mediana); media de gatos 5/5 e de gatos na colecao na run 100.
+
+| Variante | 1o 5/5: ate 30 | ate 100 | mediana | so adocao: ate 30 | ate 100 | par 5/5: ate 30 | ate 100 | mediana | por breed (100) | deck 12x5/5: ate 100 | mediana | 5/5 medios (100) | gatos (100) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| base | 85.0% | 100.0% | 14 | 85.0% | 100.0% | 33.3% | 93.3% | 42 | 0.0% | 0.0% | >- (so 0/60) | 6.9 | 270 |
+
+### 4.2 Dificuldade ao longo da progressao (nenhuma)
+
+Vitoria da run da IA e soma media (IV ATK + IV HP) do deck, por janela de runs.
+
+| Variante | Runs 1-10 | 11-30 | 31-60 | 61-100 | Soma de IV do deck em 1-10 / 31-60 / 61-100 |
+|---|---|---|---|---|---|
+| base | 10.3% | 26.5% | 40.2% | 46.0% | 5.5 / 8.5 / 9.1 |
+
+### 4.3 Estrategia simples
+
+Colunas: jogadores com o 1o 5/5 de qualquer origem ate a run 30 / 100 e mediana da run; idem so por adocao (inclui os gatos iniciais); 1o par de pais 5/5 (macho e femea adultos) ate 30 / 100 e mediana; 5/5 nascidos de breed ate 100; deck inteiro de 12 gatos 5/5 (ate 100 e mediana); media de gatos 5/5 e de gatos na colecao na run 100.
+
+| Variante | 1o 5/5: ate 30 | ate 100 | mediana | so adocao: ate 30 | ate 100 | par 5/5: ate 30 | ate 100 | mediana | por breed (100) | deck 12x5/5: ate 100 | mediana | 5/5 medios (100) | gatos (100) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| base | 95.0% | 100.0% | 12 | 80.0% | 100.0% | 75.0% | 100.0% | 21 | 100.0% | 8.3% | >95 (so 5/60) | 85.7 | 361 |
+
+### 4.4 Dificuldade ao longo da progressao (simples)
+
+Vitoria da run da IA e soma media (IV ATK + IV HP) do deck, por janela de runs.
+
+| Variante | Runs 1-10 | 11-30 | 31-60 | 61-100 | Soma de IV do deck em 1-10 / 31-60 / 61-100 |
+|---|---|---|---|---|---|
+| base | 4.8% | 28.2% | 43.1% | 45.5% | 5.0 / 8.9 / 9.4 |
+
+### 4.5 Estrategia otima
+
+Colunas: jogadores com o 1o 5/5 de qualquer origem ate a run 30 / 100 e mediana da run; idem so por adocao (inclui os gatos iniciais); 1o par de pais 5/5 (macho e femea adultos) ate 30 / 100 e mediana; 5/5 nascidos de breed ate 100; deck inteiro de 12 gatos 5/5 (ate 100 e mediana); media de gatos 5/5 e de gatos na colecao na run 100.
+
+| Variante | 1o 5/5: ate 30 | ate 100 | mediana | so adocao: ate 30 | ate 100 | par 5/5: ate 30 | ate 100 | mediana | por breed (100) | deck 12x5/5: ate 100 | mediana | 5/5 medios (100) | gatos (100) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| base | 98.3% | 100.0% | 10 | 76.7% | 100.0% | 98.3% | 100.0% | 18 | 100.0% | 10.0% | >85 (so 6/60) | 249.4 | 559 |
+
+### 4.6 Dificuldade ao longo da progressao (otima)
+
+Vitoria da run da IA e soma media (IV ATK + IV HP) do deck, por janela de runs.
+
+| Variante | Runs 1-10 | 11-30 | 31-60 | 61-100 | Soma de IV do deck em 1-10 / 31-60 / 61-100 |
+|---|---|---|---|---|---|
+| base | 3.0% | 30.8% | 51.1% | 50.1% | 4.8 / 9.3 / 9.6 |
+
+### 4.9 Efeito do 5/5 na dificuldade (todas as variantes e estrategias juntas)
+
+Vitoria da run por numero de gatos 5/5 no deck de 12 daquela run. Confunde: quem tem muitos 5/5 joga mais runs.
+
+| Gatos 5/5 no deck | Runs | Vitoria da run |
+|---|---|---|
+| 0-2 | 5650 | 21.1% |
+| 3-7 | 7815 | 42.0% |
+| 8-11 | 4145 | 53.6% |
+| 12 | 390 | 66.4% |
+

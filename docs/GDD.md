@@ -1,4 +1,4 @@
-# GDD v0.1 — Card Game Roguelike de Gatos (título provisório)
+# GDD v0.1 — Chaoscats (card game roguelike de gatos)
 
 Oct 26, 2026 · @Renatho
 
@@ -63,7 +63,7 @@ Cada gato tem uma raça, que define custo, status base e habilidade, e dois IVs 
 | Raça | Papel | Custo | ATK base | HP base | Habilidade |
 | --- | --- | --- | --- | --- | --- |
 | Vira-lata | Equilibrado, base do breed | 2 | 2 | 4 | Nenhuma |
-| Siamês | Atacante | 3 | 4 | 3 | Investida |
+| Siamês | Atacante | 3 | 3 | 3 | Investida |
 | Persa | Defensor do Líder | 2 | 1 | 6 | Provocar |
 | Sphynx | Canhão de vidro | 3 | 5 | 2 | Primeira Patada |
 | Maine Coon | Tanque | 3 | 3 | 7 | Robusto |
@@ -86,7 +86,7 @@ Cada gato também nasce com uma natureza, sorteada junto com os IVs e fixa para 
 
 | Natureza | ATK | HP | Perfil |
 | --- | --- | --- | --- |
-| Calmo | −1 | +1 | Resistente, ataca menos |
+| Calmo | 0 | +1 | Resistente, sem bônus de ataque |
 | Bravo | +1 | −1 | Agressivo, mais frágil |
 | Agitado | +2 | −2 | Extremo, alto risco e alto dano |
 
@@ -232,7 +232,7 @@ O MVP precisa responder uma pergunta: duelar com gatos de IVs diferentes e fazer
 
 ## Pontos em aberto
 
-- [ ] **Nome do jogo:** ainda não definido.
+- [x] **Nome do jogo:** Chaoscats (definido pelo Renatho em 2026-10-28).
 - [ ] **Provocar:** fica só no Persa ou outras raças também podem ter? Hoje só o Persa tem.
 - [ ] **Sprites de batalha:** definir a referência visual do gato guerreiro pacato.
 - [ ] **Naturezas:** valores exatos de Calmo, Bravo e Agitado.

@@ -48,7 +48,8 @@
   },
   "meta": {
     "start_cats": 12,
-    "name_max_length": 16
+    "name_max_length": 16,
+    "max_per_breed_autofill": 3
   },
   "adoption": {
     "nodes_per_cat": 2,

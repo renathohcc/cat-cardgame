@@ -7,7 +7,8 @@ import math
 import pygame
 
 from ui import layout as L, scenes_run
-from ui.app import DRAG_THRESHOLD, START_SIZE, render_scaled
+from ui.app import DRAG_THRESHOLD
+from ui.display import Display
 from ui.controller import load_game_content
 from ui.render import UIState
 from ui.render_run import draw_run_frame
@@ -31,8 +32,7 @@ def screenshot(path: str, seed: int, scene: str) -> None:
 
 async def run(seed: int, scene: str | None = None) -> None:
     pygame.init()
-    pygame.display.set_caption("Gatos - mini-run")
-    pygame.display.set_mode(START_SIZE, pygame.RESIZABLE)
+    disp = Display("mini-run")
     clock = pygame.time.Clock()
     ui = UIState()
     if scene and scene != "run":
@@ -47,7 +47,7 @@ async def run(seed: int, scene: str | None = None) -> None:
     press: tuple[tuple | None, tuple[int, int]] | None = None
 
     def internal(pos: tuple[int, int]) -> tuple[int, int]:
-        return L.to_internal(pos, pygame.display.get_surface().get_size())
+        return disp.to_internal(pos)
 
     running = True
     while running and not rc.wants_quit:
@@ -56,14 +56,14 @@ async def run(seed: int, scene: str | None = None) -> None:
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 running = False
+            elif disp.handle_key(ev):
+                pass
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
                     rc.cancel()
                     ui.drag = None
                 elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     rc.confirm_key()
-                elif ev.key == pygame.K_F11:
-                    pygame.display.toggle_fullscreen()
                 elif duel is not None and ev.key == pygame.K_SPACE:
                     duel.skip()
                 elif duel is not None and ev.key == pygame.K_e:
@@ -104,7 +104,7 @@ async def run(seed: int, scene: str | None = None) -> None:
         rc.update(dt)
         ui.t += dt
         draw_run_frame(canvas, rc, ui)
-        render_scaled(canvas, pygame.display.get_surface())
+        disp.render(canvas)
         pygame.display.flip()
         await asyncio.sleep(0)
     pygame.quit()

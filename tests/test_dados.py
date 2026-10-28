@@ -28,12 +28,12 @@ DATA = ROOT / "data"
 # id: (custo, atk_base, hp_base, keywords), conforme a tabela do GDD e docs/CONTRATOS.md 1.2.
 GDD_RACAS = {
     "vira-lata": (2, 2, 4, []),
-    "siames": (3, 4, 3, ["investida"]),
+    "siames": (3, 3, 3, ["investida"]),
     "persa": (2, 1, 6, ["provocar"]),
     "sphynx": (3, 5, 2, ["primeira-patada"]),
     "maine-coon": (3, 3, 7, ["robusto"]),
 }
-GDD_NATUREZAS = {"calmo": (-1, 1), "bravo": (1, -1), "agitado": (2, -2)}
+GDD_NATUREZAS = {"calmo": (0, 1), "bravo": (1, -1), "agitado": (2, -2)}
 
 
 def _json(nome: str) -> dict:

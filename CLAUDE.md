@@ -1,4 +1,4 @@
-# Gatos — card game roguelike (título provisório)
+# Chaoscats — card game roguelike de gatos (pasta e repositório ainda se chamam Gatos)
 
 Card game roguelike em Python com pygame, sem engine pronta. PC e navegador, pensado para lançar na Steam. O dono do projeto é o Renatho, e só ele decide regras de design.
 

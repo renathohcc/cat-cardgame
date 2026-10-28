@@ -18,13 +18,13 @@ import core
 # Tabela: id -> (custo, atk_base, hp_base), conforme o GDD e docs/CONTRATOS.md 1.2.
 BREEDS = {
     "vira-lata": (2, 2, 4),
-    "siames": (3, 4, 3),
+    "siames": (3, 3, 3),
     "persa": (2, 1, 6),
     "sphynx": (3, 5, 2),
     "maine-coon": (3, 3, 7),
 }
 # Tabela do GDD: id -> (mod ATK, mod HP)
-NATURES = {"calmo": (-1, 1), "bravo": (1, -1), "agitado": (2, -2)}
+NATURES = {"calmo": (0, 1), "bravo": (1, -1), "agitado": (2, -2)}
 
 
 @pytest.fixture(scope="module")
@@ -103,8 +103,8 @@ def test_status_nunca_abaixo_de_1(content):
                     assert st.atk >= 1 and st.hp >= 1
 
 
-def test_persa_calmo_iv_baixo_atk_minimo_1(content):
-    # 1 + 0 - 1 = 0 -> sobe para 1
+def test_persa_iv_baixo_atk_minimo_1(content):
+    # Persa ATK base 1, IV 1, Calmo 0: 1 (piso 1 respeitado)
     st = core.cat_stats(content, manual_cat(content, "persa", "calmo", 1, 1))
     assert st.atk == 1
 

@@ -138,6 +138,8 @@ def check_run(docs: dict[str, dict]) -> int:
         fail("meta.start_cats < duel.deck_size")
     if meta["name_max_length"] < 1:
         fail("meta.name_max_length < 1")
+    if meta["max_per_breed_autofill"] < 1:
+        fail("meta.max_per_breed_autofill < 1")
     errors += check_adoption(docs["rules"])
     errors += check_breed(docs["rules"])
     if not errors:

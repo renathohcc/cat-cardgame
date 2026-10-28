@@ -253,11 +253,16 @@
         "name_max_length": {
           "type": "integer",
           "minimum": 1
+        },
+        "max_per_breed_autofill": {
+          "type": "integer",
+          "minimum": 1
         }
       },
       "required": [
         "start_cats",
-        "name_max_length"
+        "name_max_length",
+        "max_per_breed_autofill"
       ],
       "additionalProperties": false
     },

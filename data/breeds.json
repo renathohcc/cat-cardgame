@@ -2,7 +2,7 @@
   "schema_version": 1,
   "breeds": [
     {"id": "vira-lata", "nome": "Vira-lata", "papel": "Equilibrado, base do breed", "custo": 2, "atk_base": 2, "hp_base": 4, "keywords": []},
-    {"id": "siames", "nome": "Siamês", "papel": "Atacante", "custo": 3, "atk_base": 4, "hp_base": 3, "keywords": ["investida"]},
+    {"id": "siames", "nome": "Siamês", "papel": "Atacante", "custo": 3, "atk_base": 3, "hp_base": 3, "keywords": ["investida"]},
     {"id": "persa", "nome": "Persa", "papel": "Defensor do Líder", "custo": 2, "atk_base": 1, "hp_base": 6, "keywords": ["provocar"]},
     {"id": "sphynx", "nome": "Sphynx", "papel": "Canhão de vidro", "custo": 3, "atk_base": 5, "hp_base": 2, "keywords": ["primeira-patada"]},
     {"id": "maine-coon", "nome": "Maine Coon", "papel": "Tanque", "custo": 3, "atk_base": 3, "hp_base": 7, "keywords": ["robusto"]}

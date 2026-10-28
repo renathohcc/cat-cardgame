@@ -12,14 +12,9 @@ from ui.controller import Controller, load_game_content
 from ui.render import UIState, draw_frame
 from ui.theme import H, W
 
-START_SIZE = (W * 3, H * 3)
+from ui.display import START_SIZE, Display, render_scaled  # noqa: F401  (re-export)
+
 DRAG_THRESHOLD = 4
-
-
-def render_scaled(canvas: pygame.Surface, screen: pygame.Surface) -> None:
-    scale, ox, oy = L.view_transform(screen.get_size())
-    screen.fill((0, 0, 0))
-    screen.blit(pygame.transform.scale(canvas, (W * scale, H * scale)), (ox, oy))
 
 
 def make_controller(seed: int, enemy: str | None = None) -> Controller:
@@ -51,8 +46,7 @@ def screenshot(path: str, seed: int, scene: str, enemy: str | None = None) -> No
 
 async def run(seed: int, enemy: str | None = None) -> None:
     pygame.init()
-    pygame.display.set_caption("Gatos - duelo de teste")
-    pygame.display.set_mode(START_SIZE, pygame.RESIZABLE)
+    disp = Display("duelo de teste")
     clock = pygame.time.Clock()
     ctrl = make_controller(seed, enemy)
     canvas = pygame.Surface((W, H))
@@ -60,7 +54,7 @@ async def run(seed: int, enemy: str | None = None) -> None:
     press: tuple[tuple | None, tuple[int, int]] | None = None
 
     def internal(pos: tuple[int, int]) -> tuple[int, int]:
-        return L.to_internal(pos, pygame.display.get_surface().get_size())
+        return disp.to_internal(pos)
 
     def hit(pos: tuple[int, int]) -> tuple | None:
         return L.hit_test(pos, len(ctrl.shown.me.hand), final=ctrl.final_visible, confirm=ctrl.confirming)
@@ -71,6 +65,8 @@ async def run(seed: int, enemy: str | None = None) -> None:
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 running = False
+            elif disp.handle_key(ev):
+                pass
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
                     ctrl.cancel()
@@ -83,8 +79,6 @@ async def run(seed: int, enemy: str | None = None) -> None:
                     ctrl.again()
                 elif ev.key == pygame.K_r and ctrl.final_visible:
                     ctrl.repeat()
-                elif ev.key == pygame.K_F11:
-                    pygame.display.toggle_fullscreen()
             elif ev.type == pygame.MOUSEBUTTONDOWN:
                 pos = internal(ev.pos)
                 if ev.button == 1:
@@ -115,7 +109,7 @@ async def run(seed: int, enemy: str | None = None) -> None:
         ctrl.update(dt)
         ui.t += dt
         draw_frame(canvas, ctrl, ui)
-        render_scaled(canvas, pygame.display.get_surface())
+        disp.render(canvas)
         pygame.display.flip()
         await asyncio.sleep(0)
     pygame.quit()

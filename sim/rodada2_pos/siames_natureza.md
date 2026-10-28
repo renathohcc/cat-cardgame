@@ -1,0 +1,181 @@
+# Balanceamento, rodada 2 (T6.0): seeds [1, 2, 3], 1000 duelos por celula por seed
+
+IA simples dos dois lados; sem cartas de efeito nos duelos de decks (as runs incluem drafts de efeitos e Espiritos escolhidos ao acaso). Valem para essa IA, nao para um humano. Dados atuais = pacote B ja aplicado.
+
+## Tema 1: Siames (seeds [1, 2, 3], 1000 duelos por experimento por seed, 300 runs por seed)
+
+Variantes (so em memoria):
+
+- `base`: Siames custo 3, ATK 4, HP 3, Investida (dados atuais)
+- `custo4`: Custo 4
+- `atk3`: ATK base 4 -> 3
+- `hp4`: HP base 3 -> 4 (nao e um nerf; referencia)
+- `sem-investida`: Remove Investida
+- `atk3-hp4`: ATK 3, HP 4
+- `custo4-hp4`: Custo 4, HP 4 (mantem ATK 4 e Investida)
+- `atk3-sem-inv`: ATK 3 e sem Investida
+- `atk3-hp2`: ATK 3, HP 3 -> 2 (mais fragil)
+
+### 1.1 Vitoria por raca: round-robin mono-raca (quem comeca alterna)
+
+| Variante | Vira-lata | Siamês | Persa | Sphynx | Maine Coon |
+|---|---|---|---|---|---|
+| base | 56.2% | 58.4% | 67.8% | 36.5% | 31.0% |
+| custo4 | 69.2% | 3.6% | 78.2% | 51.8% | 47.2% |
+| atk3 | 56.2% | 58.4% | 67.8% | 36.5% | 31.0% |
+| hp4 | 49.3% | 82.0% | 57.1% | 32.5% | 29.0% |
+| sem-investida | 68.5% | 7.7% | 76.8% | 48.6% | 48.4% |
+| atk3-hp4 | 49.3% | 82.0% | 57.1% | 32.5% | 29.0% |
+| custo4-hp4 | 69.1% | 6.5% | 78.1% | 51.7% | 44.6% |
+| atk3-sem-inv | 68.5% | 7.7% | 76.8% | 48.6% | 48.4% |
+| atk3-hp2 | 64.0% | 38.3% | 76.6% | 38.3% | 32.8% |
+
+### 1.2 Vitoria por raca: deck realista (4 gatos da raca + 8 mistos) vs misto
+
+| Variante | Vira-lata | Siamês | Persa | Sphynx | Maine Coon |
+|---|---|---|---|---|---|
+| base | 39.7% | 50.8% | 53.5% | 41.2% | 47.6% |
+| custo4 | 45.0% | 37.8% | 55.0% | 46.2% | 51.8% |
+| atk3 | 39.7% | 50.8% | 53.5% | 41.2% | 47.6% |
+| hp4 | 37.5% | 56.6% | 51.3% | 38.7% | 45.0% |
+| sem-investida | 43.2% | 27.8% | 53.2% | 46.4% | 58.3% |
+| atk3-hp4 | 37.5% | 56.6% | 51.3% | 38.7% | 45.0% |
+| custo4-hp4 | 42.6% | 42.3% | 53.8% | 43.4% | 49.8% |
+| atk3-sem-inv | 43.2% | 27.8% | 53.2% | 46.4% | 58.3% |
+| atk3-hp2 | 40.1% | 44.3% | 55.0% | 41.1% | 49.5% |
+
+### 1.3 Vitoria por raca: deck mono-raca vs misto
+
+| Variante | Vira-lata | Siamês | Persa | Sphynx | Maine Coon |
+|---|---|---|---|---|---|
+| base | 10.4% | 24.1% | 11.8% | 10.4% | 8.9% |
+| custo4 | 23.1% | 0.1% | 19.0% | 17.8% | 13.5% |
+| atk3 | 10.4% | 24.1% | 11.8% | 10.4% | 8.9% |
+| hp4 | 8.4% | 37.7% | 8.8% | 9.2% | 7.8% |
+| sem-investida | 20.4% | 2.0% | 19.5% | 22.7% | 24.0% |
+| atk3-hp4 | 8.4% | 37.7% | 8.8% | 9.2% | 7.8% |
+| custo4-hp4 | 15.7% | 0.5% | 13.4% | 15.8% | 11.5% |
+| atk3-sem-inv | 20.4% | 2.0% | 19.5% | 22.7% | 24.0% |
+| atk3-hp2 | 15.6% | 12.3% | 17.5% | 10.8% | 10.6% |
+
+### 1.4 Uso: gatos da raca jogados por copia no deck (misto vs misto; 1,00 = joga toda copia que compra)
+Menor que o dos outros = a raca fica na mao (custo alto) ou o duelo acaba antes.
+
+| Variante | Vira-lata | Siamês | Persa | Sphynx | Maine Coon |
+|---|---|---|---|---|---|
+| base | 0.75 | 0.84 | 0.74 | 0.83 | 0.83 |
+| custo4 | 0.69 | 0.86 | 0.69 | 0.80 | 0.80 |
+| atk3 | 0.75 | 0.84 | 0.74 | 0.83 | 0.83 |
+| hp4 | 0.74 | 0.82 | 0.74 | 0.83 | 0.83 |
+| sem-investida | 0.82 | 0.89 | 0.82 | 0.89 | 0.90 |
+| atk3-hp4 | 0.74 | 0.82 | 0.74 | 0.83 | 0.83 |
+| custo4-hp4 | 0.69 | 0.86 | 0.69 | 0.80 | 0.79 |
+| atk3-sem-inv | 0.82 | 0.89 | 0.82 | 0.89 | 0.90 |
+| atk3-hp2 | 0.75 | 0.83 | 0.75 | 0.83 | 0.83 |
+
+### 1.5 Vitoria do deck misto por numero de copias da raca (0-1 / 2-3 / 4+; duelo IA vs IA)
+
+| Variante | Vira-lata | Siamês | Persa | Sphynx | Maine Coon |
+|---|---|---|---|---|---|
+| base | 52.1% / 51.2% / 44.1% | 48.4% / 50.3% / 51.7% | 41.6% / 52.6% / 54.6% | 54.9% / 50.6% / 41.9% | 45.5% / 51.5% / 51.8% |
+| custo4 | 49.2% / 51.3% / 47.9% | 59.9% / 48.7% / 39.8% | 41.4% / 50.8% / 59.7% | 53.5% / 50.0% / 45.5% | 42.1% / 52.4% / 54.2% |
+| atk3 | 52.1% / 51.2% / 44.1% | 48.4% / 50.3% / 51.7% | 41.6% / 52.6% / 54.6% | 54.9% / 50.6% / 41.9% | 45.5% / 51.5% / 51.8% |
+| hp4 | 54.5% / 50.6% / 42.4% | 44.8% / 50.3% / 56.5% | 44.3% / 51.5% / 53.9% | 55.7% / 49.4% / 44.3% | 48.0% / 51.2% / 49.4% |
+| sem-investida | 52.0% / 49.8% / 47.8% | 59.9% / 50.1% / 36.0% | 43.4% / 52.2% / 53.3% | 49.5% / 51.3% / 47.6% | 38.6% / 52.9% / 58.0% |
+| atk3-hp4 | 54.5% / 50.6% / 42.4% | 44.8% / 50.3% / 56.5% | 44.3% / 51.5% / 53.9% | 55.7% / 49.4% / 44.3% | 48.0% / 51.2% / 49.4% |
+| custo4-hp4 | 50.8% / 51.0% / 46.3% | 56.5% / 48.8% / 44.0% | 43.0% / 51.9% / 54.8% | 51.0% / 50.0% / 48.7% | 42.9% / 52.4% / 53.0% |
+| atk3-sem-inv | 52.0% / 49.8% / 47.8% | 59.9% / 50.1% / 36.0% | 43.4% / 52.2% / 53.3% | 49.5% / 51.3% / 47.6% | 38.6% / 52.9% / 58.0% |
+| atk3-hp2 | 52.2% / 51.1% / 44.5% | 52.9% / 50.6% / 44.2% | 40.6% / 52.1% / 57.3% | 55.0% / 49.2% / 45.5% | 43.8% / 52.2% / 52.9% |
+
+### 1.6 Runs completas da IA (deck inicial de 12 sorteados; mapa e draft ao acaso)
+
+Vitoria da run por numero de copias da raca no deck inicial (0-1 / 2-3 / 4+).
+
+| Variante | Run vence (todas) | Nos vencidos (media) | Vira-lata | Siamês | Persa | Sphynx | Maine Coon |
+|---|---|---|---|---|---|---|---|
+| base | 3.0% | 2.39 | 3.7% / 3.0% / 1.8% | 2.8% / 3.5% / 2.0% | 0.8% / 3.1% / 5.5% | 3.2% / 2.9% / 2.9% | 3.3% / 3.3% / 1.7% |
+| custo4 | 3.8% | 2.41 | 3.5% / 4.1% / 3.2% | 5.4% / 2.8% / 4.1% | 2.1% / 3.4% / 6.7% | 4.0% / 3.6% / 3.8% | 3.8% / 4.5% / 1.7% |
+| atk3 | 3.0% | 2.39 | 3.7% / 3.0% / 1.8% | 2.8% / 3.5% / 2.0% | 0.8% / 3.1% / 5.5% | 3.2% / 2.9% / 2.9% | 3.3% / 3.3% / 1.7% |
+| hp4 | 4.3% | 2.51 | 6.3% / 4.2% / 1.7% | 4.8% / 3.7% / 5.5% | 1.3% / 5.3% / 5.6% | 3.6% / 4.5% / 4.9% | 5.5% / 4.3% / 2.8% |
+| sem-investida | 3.7% | 2.68 | 4.0% / 4.2% / 1.8% | 7.2% / 3.2% / 0.5% | 1.2% / 3.4% / 7.5% | 2.1% / 3.6% / 5.9% | 4.6% / 3.4% / 3.0% |
+| atk3-hp4 | 4.3% | 2.51 | 6.3% / 4.2% / 1.7% | 4.8% / 3.7% / 5.5% | 1.3% / 5.3% / 5.6% | 3.6% / 4.5% / 4.9% | 5.5% / 4.3% / 2.8% |
+| custo4-hp4 | 3.2% | 2.41 | 2.0% / 4.1% / 2.4% | 4.5% / 3.4% / 1.5% | 1.2% / 3.1% / 6.0% | 2.9% / 4.0% / 1.6% | 2.6% / 3.8% / 2.6% |
+| atk3-sem-inv | 3.7% | 2.68 | 4.0% / 4.2% / 1.8% | 7.2% / 3.2% / 0.5% | 1.2% / 3.4% / 7.5% | 2.1% / 3.6% / 5.9% | 4.6% / 3.4% / 3.0% |
+| atk3-hp2 | 3.7% | 2.38 | 6.2% / 2.6% / 2.8% | 5.3% / 3.7% / 1.7% | 1.2% / 3.7% / 7.2% | 4.0% / 3.3% / 4.1% | 2.8% / 4.0% / 4.1% |
+
+## Tema 2: naturezas (seeds [1, 2, 3], 1000 duelos por celula por seed)
+
+Variantes:
+
+- `base`: Calmo -1/+1, Bravo +1/-1, Agitado +2/-2 (dados atuais)
+- `calmo0+1`: Calmo 0/+1
+- `calmo0+2`: Calmo 0/+2
+- `calmo-1+2`: Calmo -1/+2
+- `calmo0+3`: Calmo 0/+3
+- `bravo+1-2`: Bravo +1/-2
+- `agitado+2-3`: Agitado +2/-3
+- `calmo0+2-bravo+1-2`: Calmo 0/+2 e Bravo +1/-2
+- `calmo0+2-agit+2-3`: Calmo 0/+2 e Agitado +2/-3
+- `calmo0+1-agit+2-3`: Calmo 0/+1 e Agitado +2/-3
+- `calmo0+2-agit+1-2`: Calmo 0/+2 e Agitado +1/-2
+
+### IV 3/3 fixo, decks mistos, natureza unica por deck (vitoria do primeiro)
+
+| Variante | Calmo x Bravo | Calmo x Agitado | Bravo x Agitado |
+|---|---|---|---|
+| base | 53.4% | 54.9% | 41.5% |
+| calmo0+1 | 53.4% | 54.9% | 41.5% |
+| calmo0+2 | 73.6% | 63.8% | 41.5% |
+| calmo-1+2 | 24.0% | 16.7% | 41.5% |
+| calmo0+3 | 80.2% | 75.3% | 41.5% |
+| bravo+1-2 | 79.3% | 54.9% | 14.5% |
+| agitado+2-3 | 53.4% | 70.6% | 69.0% |
+| calmo0+2-bravo+1-2 | 87.7% | 63.8% | 14.5% |
+| calmo0+2-agit+2-3 | 73.6% | 72.2% | 69.0% |
+| calmo0+1-agit+2-3 | 53.4% | 70.6% | 69.0% |
+| calmo0+2-agit+1-2 | 73.6% | 86.1% | 72.3% |
+
+### IV sorteado real, natureza unica por deck (vitoria do primeiro)
+
+| Variante | Calmo x Bravo | Calmo x Agitado | Bravo x Agitado |
+|---|---|---|---|
+| base | 53.6% | 45.2% | 40.0% |
+| calmo0+1 | 53.6% | 45.2% | 40.0% |
+| calmo0+2 | 65.8% | 63.4% | 40.0% |
+| calmo-1+2 | 25.3% | 23.7% | 40.0% |
+| calmo0+3 | 72.1% | 68.9% | 40.0% |
+| bravo+1-2 | 74.8% | 45.2% | 19.6% |
+| agitado+2-3 | 53.6% | 70.4% | 64.6% |
+| calmo0+2-bravo+1-2 | 83.1% | 63.4% | 19.6% |
+| calmo0+2-agit+2-3 | 65.8% | 80.3% | 64.6% |
+| calmo0+1-agit+2-3 | 53.6% | 70.4% | 64.6% |
+| calmo0+2-agit+1-2 | 65.8% | 83.1% | 72.1% |
+
+### Deck 100% de uma natureza (IV real) vs deck misto
+
+| Variante | Calmo | Bravo | Agitado |
+|---|---|---|---|
+| base | 49.2% | 44.5% | 55.0% |
+| calmo0+1 | 49.2% | 44.5% | 55.0% |
+| calmo0+2 | 58.0% | 37.5% | 45.6% |
+| calmo-1+2 | 33.1% | 53.8% | 62.1% |
+| calmo0+3 | 60.8% | 34.5% | 40.4% |
+| bravo+1-2 | 58.0% | 27.5% | 60.6% |
+| agitado+2-3 | 57.5% | 52.6% | 35.9% |
+| calmo0+2-bravo+1-2 | 64.4% | 23.9% | 52.9% |
+| calmo0+2-agit+2-3 | 64.9% | 45.6% | 30.1% |
+| calmo0+1-agit+2-3 | 57.5% | 52.6% | 35.9% |
+| calmo0+2-agit+1-2 | 65.4% | 49.3% | 23.6% |
+
+### Escala: quanto vale cada ajuste de status (deck misto A vs B; A tem o beneficio; variante 'base')
+
+| Diferenca de status entre os decks | Vitoria de A |
+|---|---|
+| +1 ATK (IV ATK 3 vs 1) | 85.6% |
+| +1 HP (IV HP 3 vs 2) | 74.2% |
+| +2 HP (IV HP 3 vs 1) | 88.6% |
+| +1 ATK -1 HP (3/2 vs 1/3) | 66.7% |
+| +2 ATK -2 HP (5/1 vs 1/3) | 73.1% |
+| IV 3/3 vs 2/2 | 94.2% |
+| IV 4/4 vs 3/3 | 72.2% |
+

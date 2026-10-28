@@ -34,7 +34,7 @@ def panel(surf: pygame.Surface, r: pygame.Rect, edge=None) -> None:
 
 # ------------------------------------------------------------------ menu
 def draw_menu(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
-    outlined(surf, "GATOS", W // 2, 38, C["warn"], 5, "center")
+    outlined(surf, "CHAOSCATS", W // 2, 38, C["warn"], 5, "center")
     font.draw(surf, "card game roguelike", W // 2, 84, C["dim"], 1, "center")
     for i, (key, label, enabled) in enumerate(hub.menu_labels()):
         r = LH.menu_button(i)
@@ -54,6 +54,7 @@ def draw_menu(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
         font.draw(surf, hub.save_summary(), W // 2, info.y + 10, C["dim"], 1, "center")
     if hub.save_path is not None:
         font.draw(surf, font.fit(str(hub.save_path), W - 12), W // 2, 256, C["slot_edge"], 1, "center")
+    font.draw(surf, "F11: tela cheia", W - 4, 4, C["slot_edge"], 1, "right")
     if hub.confirm_new:
         draw_confirm(surf, ui)
     draw_toast(surf, hub)

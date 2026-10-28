@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import copy
+from collections import Counter
 from pathlib import Path
 from random import Random
 
 import pytest
 
-from core import (autofill_deck, available_cats, cat_stats, load_content, new_game,
+from core import (Cat, autofill_deck, available_cats, cat_stats, load_content, new_game,
                   new_run, new_run_from_save, rename_cat, roll_cat, save_to_dict, set_deck)
 from core.ai import choose_action
 from core.duel import apply_action
@@ -174,18 +175,22 @@ def test_autofill_completa_ate_12_mantendo_escolhidos(content, save):
     assert r[:2] == pick
 
 
-def test_autofill_escolhe_os_maiores_atk_mais_hp(content, save):
-    for _ in range(4):
-        extra_cat(content, save)
-    r = autofill_deck(content, save, [ids(save)[0]])
+def test_autofill_escolhe_os_maiores_atk_vezes_hp(content, save):
+    # 3 gatos por raca no maximo (15), IVs variados: o limite por raca nao interfere
+    especs = ["vira-lata", "siames", "persa", "sphynx", "maine-coon"] * 3
+    cats = colecao(content, save, especs)
+    for i, c in enumerate(cats):
+        c.iv_atk, c.iv_hp = 1 + i % 5, 1 + (i * 2) % 5
+    r = autofill_deck(content, save, [cats[0].id])
 
-    def soma(cid):
-        s = cat_stats(content, next(c for c in save.cats if c.id == cid))
-        return s.atk + s.hp
+    def prod(c):
+        s = cat_stats(content, c)
+        return s.atk * s.hp
 
-    escolhidos = r[1:]
-    fora = [c.id for c in save.cats if c.id not in r]
-    assert min(soma(c) for c in escolhidos) >= max(soma(c) for c in fora)
+    escolhidos = [c for c in cats if c.id in r[1:]]
+    fora = [c for c in cats if c.id not in r]
+    assert r[0] == cats[0].id and len(r) == 12
+    assert min(prod(c) for c in escolhidos) >= max(prod(c) for c in fora)
 
 
 def test_autofill_desempate_por_id_e_deterministico(content, save):
@@ -331,3 +336,114 @@ def test_run_completa_com_deck_da_colecao_e_ia(content, seed):
     _terminar_run(r, seed)
     assert r.status == "finished" and r.result in ("vitoria", "derrota")
     assert save_to_dict(s) == antes
+
+
+# ------------------------------------------------------------ autofill: limite por raca
+def colecao(content, save, specs, ids_reversos=False):
+    """Troca a colecao por gatos adultos IV 3/3, natureza bravo. specs: lista de racas."""
+    n = len(specs)
+    cats = []
+    for i, breed in enumerate(specs):
+        k = n - i if ids_reversos else i + 1
+        cats.append(Cat(id=f"c-{k:06d}", breed=breed, sex="M", nature="bravo",
+                        iv_atk=3, iv_hp=3))
+    save.cats = cats
+    save.deck = []
+    save.next_cat_id = n + 1
+    return cats
+
+
+def racas(save, deck):
+    por_id = {c.id: c.breed for c in save.cats}
+    return Counter(por_id[i] for i in deck)
+
+
+ESPEC_MC = (["maine-coon"] * 8 + ["vira-lata"] * 3 + ["persa"] * 3
+            + ["sphynx"] * 3 + ["siames"] * 3)
+
+
+def test_autofill_limita_a_3_por_raca_mesmo_com_raca_dominante(content, save):
+    colecao(content, save, ESPEC_MC)
+    r = autofill_deck(content, save, [])
+    assert len(r) == 12 and len(set(r)) == 12
+    assert racas(save, r)["maine-coon"] == 3
+    assert max(racas(save, r).values()) <= 3
+
+
+def test_autofill_conta_os_escolhidos_no_limite(content, save):
+    colecao(content, save, ESPEC_MC)
+    mcs = [c.id for c in save.cats if c.breed == "maine-coon"]
+    r = autofill_deck(content, save, mcs[:2])
+    assert r[:2] == mcs[:2]
+    assert racas(save, r)["maine-coon"] == 3      # 2 escolhidos + 1
+
+
+def test_autofill_escolhidos_acima_do_limite_sao_mantidos_sem_somar_mais(content, save):
+    colecao(content, save, ESPEC_MC)
+    mcs = [c.id for c in save.cats if c.breed == "maine-coon"]
+    r = autofill_deck(content, save, mcs[:5])
+    assert r[:5] == mcs[:5]
+    assert racas(save, r)["maine-coon"] == 5
+
+
+def test_autofill_so_ultrapassa_o_limite_se_faltarem_gatos(content, save):
+    colecao(content, save, ["maine-coon"] * 7 + ["vira-lata"] * 3 + ["persa"] * 2)
+    r = autofill_deck(content, save, [])
+    assert sorted(r) == sorted(ids(save))
+    assert racas(save, r)["maine-coon"] == 7
+
+
+def test_autofill_excedente_segue_atk_vezes_hp_e_depois_id(content, save):
+    colecao(content, save, ["maine-coon"] * 6 + ["vira-lata"] * 6 + ["persa"] * 2)
+    r = autofill_deck(content, save, [])
+    assert len(r) == 12
+    c = racas(save, r)
+    assert c["persa"] == 2 and c["maine-coon"] + c["vira-lata"] == 10
+    # primeiros 8: 3 de cada uma das tres racas dentro do limite (2 persa)
+    dentro = set(r[:8])
+    assert racas(save, list(dentro)) == Counter({"maine-coon": 3, "vira-lata": 3, "persa": 2})
+    # os 4 do excedente sao os de maior ATK*HP (maine-coon) e depois menor id
+    extra = r[8:]
+    mc_fora = sorted(i.id for i in save.cats if i.breed == "maine-coon" and i.id not in dentro)
+    assert extra[:3] == mc_fora
+    assert extra[3] == min(i.id for i in save.cats
+                           if i.breed == "vira-lata" and i.id not in dentro)
+
+
+def test_autofill_limite_desempata_por_menor_id_dentro_da_raca(content, save):
+    colecao(content, save, ["maine-coon"] * 6 + ["vira-lata"] * 6 + ["persa"] * 4,
+            ids_reversos=True)
+    r = autofill_deck(content, save, [])
+    mc = sorted(c.id for c in save.cats if c.breed == "maine-coon")
+    assert [i for i in r if i in mc][:3] == mc[:3]
+    assert r == autofill_deck(content, save, [])
+
+
+def test_autofill_sem_chave_no_content_usa_limite_3(content, save):
+    colecao(content, save, ESPEC_MC)
+    esperado = autofill_deck(content, save, [])
+    c2 = copy.deepcopy(content)
+    c2.rules["meta"].pop("max_per_breed_autofill", None)
+    assert autofill_deck(c2, save, []) == esperado
+
+
+@pytest.mark.parametrize("limite", [2, 4])
+def test_autofill_respeita_limite_configurado_no_content(content, save, limite):
+    colecao(content, save, ESPEC_MC)
+    c2 = copy.deepcopy(content)
+    c2.rules["meta"]["max_per_breed_autofill"] = limite
+    r = autofill_deck(c2, save, [])
+    assert len(r) == 12
+    if limite == 4:
+        assert racas(save, r)["maine-coon"] == 4 and max(racas(save, r).values()) <= 4
+    else:
+        # 5 racas x 2 = 10 < 12: ultrapassa so o necessario, dando preferencia a maior ATK*HP
+        assert racas(save, r)["maine-coon"] == 4
+        assert all(racas(save, r)[b] >= 2 for b in set(ESPEC_MC))
+
+
+def test_autofill_com_limite_nao_altera_o_save(content, save):
+    colecao(content, save, ESPEC_MC)
+    antes = copy.deepcopy(save_to_dict(save))
+    autofill_deck(content, save, [])
+    assert save_to_dict(save) == antes

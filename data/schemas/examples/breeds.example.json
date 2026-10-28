@@ -15,7 +15,7 @@
       "nome": "Siamês",
       "papel": "Atacante",
       "custo": 3,
-      "atk_base": 4,
+      "atk_base": 3,
       "hp_base": 3,
       "keywords": [
         "investida"

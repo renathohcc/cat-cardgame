@@ -75,23 +75,45 @@ def save_deck_draft(save: SaveData, cat_ids: list[str],
 
 
 def autofill_deck(content: Content, save: SaveData, picked: list[str]) -> list[str]:
-    """Mantem `picked` e completa ate deck_size com os melhores restantes
-    (maior ATK+HP finais, desempate por id). Nao altera o save."""
+    """Mantem `picked` e completa ate deck_size pelos maiores ATK*HP finais
+    (desempate por id), com no maximo `meta.max_per_breed_autofill` (padrao 3)
+    gatos por raca contando os ja escolhidos; so passa do limite se faltarem
+    gatos para fechar o deck. Nao altera o save."""
     size = content.rules["duel"]["deck_size"]
     ids = list(picked)
     if len(ids) > size:
         raise IllegalAction(f"mais de {size} gatos escolhidos")
     _check_ids(save, ids)
+    meta = content.rules.get("meta", {}) or {}
+    limit = int(meta.get("max_per_breed_autofill", 3))
     rest = []
     for c in available_cats(save):
         if c.id not in ids:
             s = cat_stats(content, c)
-            rest.append((-(s.atk + s.hp), c.id))
+            rest.append((-(s.atk * s.hp), c.id, c.breed))
     rest.sort()
     need = size - len(ids)
     if len(rest) < need:
         raise IllegalAction(f"gatos disponiveis insuficientes para o deck de {size}")
-    return ids + [cid for _, cid in rest[:need]]
+    count: dict[str, int] = {}
+    for cid in ids:
+        b = get_cat(save, cid).breed
+        count[b] = count.get(b, 0) + 1
+    chosen: list[str] = []
+    skipped: list[tuple[int, str, str]] = []
+    for item in rest:
+        if len(chosen) == need:
+            break
+        if count.get(item[2], 0) < limit:
+            chosen.append(item[1])
+            count[item[2]] = count.get(item[2], 0) + 1
+        else:
+            skipped.append(item)
+    for item in skipped:
+        if len(chosen) == need:
+            break
+        chosen.append(item[1])
+    return ids + chosen
 
 
 def deck_cats(save: SaveData) -> list[Cat]:
