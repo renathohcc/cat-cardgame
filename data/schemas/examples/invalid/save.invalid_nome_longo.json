@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "cats": [
+    {
+      "id": "c-000123",
+      "breed": "siames",
+      "name": "xxxxxxxxxxxxxxxxx",
+      "sex": "F",
+      "nature": "bravo",
+      "iv_atk": 4,
+      "iv_hp": 2,
+      "stage": "adult",
+      "rest_runs_left": 0,
+      "runs_as_kitten": 0
+    }
+  ],
+  "deck": [
+    "c-000123"
+  ],
+  "coins": 0,
+  "next_cat_id": 124,
+  "breeding": [
+    {
+      "male": "c-1",
+      "female": "c-2",
+      "runs_left": 2
+    }
+  ],
+  "pity": {
+    "runs_without_high_iv": 0
+  },
+  "progress": {
+    "leagues_cleared": 0,
+    "best_distance": 0,
+    "records": {}
+  },
+  "dex": {
+    "breeds_seen": [],
+    "perfect_cats": []
+  },
+  "items": {
+    "nature_item": false
+  },
+  "settings": {}
+}

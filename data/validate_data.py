@@ -133,6 +133,11 @@ def check_run(docs: dict[str, dict]) -> int:
     for key in ("draft_options", "draft_options_elite", "draft_options_rest"):
         if run[key] > pool:
             fail(f"{key} ({run[key]}) maior que o pool ({pool})")
+    meta = docs["rules"]["meta"]
+    if meta["start_cats"] < docs["rules"]["duel"]["deck_size"]:
+        fail("meta.start_cats < duel.deck_size")
+    if meta["name_max_length"] < 1:
+        fail("meta.name_max_length < 1")
     if not errors:
         print("ok run")
     return errors

@@ -40,5 +40,9 @@
     "mutation_chance": null,
     "base_runs": 2,
     "growth_runs": 2
+  },
+  "meta": {
+    "start_cats": 12,
+    "name_max_length": 16
   }
 }

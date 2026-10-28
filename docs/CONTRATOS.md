@@ -245,7 +245,19 @@ choose_action(duel: Duel, side: Side, rng: Random) -> Action   # sempre uma aç�
 ```
 
 ### 2.5 Meta (Fase 5+, assinatura reservada)
-`breed(...)`, `age_cats_after_run(...)`, `adopt(...)`, `donate(...)`, `rename(...)`, `save/load(...)`. Detalhes só quando a Fase 5 abrir.
+**5a (feito, 2026-10-28):** `core/save.py` e `core/collection.py`.
+```
+new_game(content, rng) -> SaveData            # 12 adultos sorteados (rules.meta.start_cats), ids c-000001…, deck = os 12
+save_to_dict(save) ; save_from_dict(d, content=None)   # ValueError em formato inválido
+write_save(save, path) ; read_save(path, content=None) # JSON UTF-8, escrita atômica; caminho sempre por parâmetro
+rename_cat(save, cat_id, name, content=None)   # até rules.meta.name_max_length (16); vazio/None remove `name`; IllegalAction se inválido
+available_cats(save) ; get_cat(save, id) ; deck_cats(save) ; cat_stats(content, cat)
+set_deck(content, save, cat_ids)               # exatamente 12 adultos distintos e disponíveis (rest_runs_left == 0)
+autofill_deck(content, save, picked) -> ids    # completa com maior ATK+HP finais (desempate por id); não altera o save
+new_run(content, rng, cats=None) ; new_run_from_save(content, save, rng)
+```
+`rules.meta`: `start_cats` (12) e `name_max_length` (16). O save **não guarda run em andamento** (run interrompida = abandonada = derrota); `name` ausente = nome padrão; o `deck` do save pode ter menos de 12 ids (só `set_deck` exige 12).
+**5b/5c (pendente):** `breed(...)`, `age_cats_after_run(...)`, `adopt(...)`, `donate(...)`.
 
 ### 2.6 CLI
 `python -m core.cli` é o único lugar que imprime e lê entrada.

@@ -17,7 +17,7 @@ from typing import Callable
 
 import pygame
 
-from core import new_run
+from core import Run, new_run
 from core.duel import card_from_effect, card_from_special
 from core.types import Card, Content, IllegalAction
 from ui import layout as L, layout_run as LR
@@ -28,8 +28,9 @@ SCREENS = ("map", "duel", "draft", "finished")
 
 class RunController:
     def __init__(self, content: Content, seed: int, *, ai_delay: float = 0.5,
-                 seed_source: Callable[[], int] | None = None) -> None:
+                 seed_source: Callable[[], int] | None = None, run: Run | None = None) -> None:
         self.content = content
+        self._given_run = run          # run pronta (ex.: deck da colecao) para a 1a partida
         self.ai_delay = ai_delay
         self.seed_source = seed_source or (lambda: Random().randrange(1, 10**6))
         self.new_game(seed)
@@ -37,7 +38,8 @@ class RunController:
     # ------------------------------------------------------------ ciclo
     def new_game(self, seed: int) -> None:
         self.seed = seed
-        self.run = new_run(self.content, Random(seed))
+        self.run = self._given_run or new_run(self.content, Random(seed))
+        self._given_run = None
         self.duel_ctrl: Controller | None = None
         self.visited: list[str] = []          # ids dos nos escolhidos, em ordem
         self.draft_sel: int | None = None

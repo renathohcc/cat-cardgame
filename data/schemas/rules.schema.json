@@ -223,6 +223,24 @@
         "growth_runs"
       ],
       "additionalProperties": false
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "start_cats": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "name_max_length": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "start_cats",
+        "name_max_length"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -231,7 +249,8 @@
     "stats",
     "iv_weights",
     "deadlock",
-    "breed"
+    "breed",
+    "meta"
   ],
   "additionalProperties": false,
   "$schema": "https://json-schema.org/draft/2020-12/schema",

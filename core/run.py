@@ -10,7 +10,7 @@ from core.cats import roll_cat
 from core.duel import card_from_effect, card_from_special, new_duel_vs_enemy
 from core.types import Cat, Content, DeckSpec, Duel, IllegalAction
 
-__all__ = ["Run", "new_run", "draft_pool", "RUN_STATUSES"]
+__all__ = ["Run", "new_run", "new_run_from_save", "draft_pool", "RUN_STATUSES"]
 
 RUN_STATUSES = ("map", "draft", "duel", "finished")
 
@@ -246,11 +246,30 @@ class Run:
         return run
 
 
-def new_run(content: Content, rng: Random) -> Run:
-    """Cria a run: deck inicial de gatos adultos sorteados pelo `rng`."""
+def new_run_from_save(content: Content, save: Any, rng: Random) -> Run:
+    """Run com o deck salvo (`save.deck`) da colecao."""
+    by_id = {c.id: c for c in save.cats}
+    try:
+        cats = [by_id[i] for i in save.deck]
+    except KeyError as e:
+        raise IllegalAction(f"deck usa gato inexistente {e.args[0]!r}") from None
+    return new_run(content, rng, cats)
+
+
+def new_run(content: Content, rng: Random, cats: list[Cat] | None = None) -> Run:
+    """Cria a run. Sem `cats`: deck inicial sorteado pelo `rng`. Com `cats` (deck
+    da colecao): usa copias desses gatos (mesmos ids e nomes), sem sortear."""
     cfg = _run_cfg(content)
     start = cfg["start_deck"]
     size = content.rules["duel"]["deck_size"]
+    if cats is not None:
+        if len(cats) != size:
+            raise IllegalAction(f"o deck da run precisa de {size} gatos (veio {len(cats)})")
+        if len({c.id for c in cats}) != len(cats):
+            raise IllegalAction("deck da run com gatos repetidos")
+        if any(c.stage != "adult" or c.rest_runs_left != 0 for c in cats):
+            raise IllegalAction("deck da run so aceita adultos disponiveis")
+        return Run(content, rng, [copy.copy(c) for c in cats])
     if start.get("origem", "sorteio") != "sorteio":
         raise ValueError(f"start_deck.origem desconhecida: '{start.get('origem')}'")
     if start["gatos"] != size:
