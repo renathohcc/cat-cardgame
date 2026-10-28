@@ -4,7 +4,7 @@ So chama a API publica do core (`new_game`, `read_save`, `write_save`) e delega 
 `CollectionController` e a run ao `RunController`. O save so e gravado entre runs: nada de
 retomar run (fechar a janela no meio da run = run perdida, o save fica como estava).
 
-Modos: "menu" | "colecao" | "run" | "resultado".
+Modos: "menu" | "colecao" | "run" | "adocao" | "resultado".
 Elementos do menu: ("menu", "continue"|"new_game"|"quit") ("confirm_yes",) ("confirm_no",)
 Resultado: ("result_back",)
 """
@@ -14,9 +14,12 @@ import os
 from pathlib import Path
 from random import Random
 
-from core import SaveData, new_game, read_save, write_save
+from core import (SaveData, create_adoption, has_pending_adoption, new_game, read_save,
+                  write_save)
+from core.types import IllegalAction
 from core.types import Content
 from ui import layout_hub as LH
+from ui.adoption_controller import AdoptionController
 from ui.collection_controller import CollectionController
 from ui.controller import Toast
 from ui.run_controller import RunController
@@ -35,6 +38,7 @@ class HubController:
         self.save: SaveData | None = None
         self.col: CollectionController | None = None
         self.rc: RunController | None = None
+        self.adopt: AdoptionController | None = None
         self.load_error: str | None = None        # texto do erro quando o save esta corrompido
         self.has_file = False
         self.confirm_new = False
@@ -95,7 +99,8 @@ class HubController:
     def save_summary(self) -> str:
         if self.can_continue:
             s = self.save
-            return f"Save: {len(s.cats)} gatos, deck {len(s.deck)}/{self.content.rules['duel']['deck_size']}"
+            txt = f"Save: {len(s.cats)} gatos, deck {len(s.deck)}/{self.content.rules['duel']['deck_size']}"
+            return txt + ("  (adoção pendente)" if has_pending_adoption(s) else "")
         if self.load_error:
             return "Save corrompido ou ilegível."
         return "Nenhum save encontrado."
@@ -112,6 +117,8 @@ class HubController:
             return LH.hit_test(pos, m, confirm=self.confirm_new)
         if m == "colecao":
             return self.col.hit(pos)
+        if m == "adocao":
+            return self.adopt.hit(pos)
         return LH.hit_test(pos, m)
 
     def click(self, elem: tuple | None) -> None:
@@ -127,6 +134,9 @@ class HubController:
                 self.mode = "menu"
             elif act == "start":
                 self.start_run()
+        elif m == "adocao":
+            if self.adopt.click(elem) == "done":
+                self._finish_adoption()
         elif m == "resultado" and elem == ("result_back",):
             self.mode = "colecao"
 
@@ -144,6 +154,7 @@ class HubController:
         if item == "continue" and self.can_continue:
             self.col = CollectionController(self.content, self.save, self.persist)
             self.mode = "colecao"
+            self.open_pending_adoption()
         elif item == "new_game":
             if self.has_file:
                 self.confirm_new = True
@@ -162,6 +173,25 @@ class HubController:
         except Exception as e:  # noqa: BLE001 - falha de backup nao impede o jogo novo
             return str(e) or type(e).__name__
         return None
+
+    def open_pending_adoption(self) -> bool:
+        """Se o save tem oferta pendente, abre a tela de Adocao. Devolve se abriu."""
+        if self.save is None or not has_pending_adoption(self.save):
+            return False
+        self.adopt = AdoptionController(self.content, self.save, self.persist)
+        self.mode = "adocao"
+        return True
+
+    def _finish_adoption(self) -> None:
+        toast = self.adopt.toast if self.adopt else None
+        self.adopt = None
+        self.mode = "colecao"
+        if self.col is None:
+            self.col = CollectionController(self.content, self.save, self.persist)
+        self.col.toast = toast
+        rows = self.col.rows()
+        if self.col.selected_cat() is None and rows:
+            self.col.selected = rows[0].cat.id
 
     def start_new_game(self) -> None:
         bak_err = self.backup_save()
@@ -187,11 +217,16 @@ class HubController:
         elif m == "colecao":
             if self.col.editing:
                 self.col.cancel_rename()
+            elif self.col.confirm_donate:
+                self.col.confirm_donate = False
             else:
                 self.mode = "menu"
         elif m == "run" and self.rc:
             self.rc.cancel()
             self._check_run_end()
+        elif m == "adocao":
+            self.adopt = None            # a oferta fica no save; "Continuar" reabre
+            self.mode = "menu"
         elif m == "resultado":
             self.mode = "colecao"
 
@@ -215,6 +250,8 @@ class HubController:
             self.col.backspace()
 
     def scroll(self, n: int) -> None:
+        if self.mode == "adocao":
+            self.adopt.scroll_by(n)
         if self.mode == "colecao" and not self.col.editing:
             self.col.scroll_by(n)
 
@@ -236,10 +273,19 @@ class HubController:
             self.result_detail.append("Você abandonou a run (conta como derrota).")
         elif rc.end_line:
             self.result_detail.append(f"{rc.end_line[0]}: \"{rc.end_line[1]}\"")
-        err = self.persist()
+        result = "abandono" if rc.abandoned else rc.run.result
+        self.rc = None
+        try:
+            create_adoption(self.content, self.save, Random(self.seed * 7919 + self.runs_started),
+                            result, n)
+        except IllegalAction as e:      # ja havia oferta pendente: mantem a antiga
+            self.say(str(e))
+        err = self.persist()            # UM unico write_save
         if err:
             self.say(f"Não consegui salvar: {err}")
-        self.rc = None
+        if self.open_pending_adoption():
+            return
+        self.result_detail.append("Nenhum gato para adotar desta vez")
         self.mode = "resultado"
 
     # ------------------------------------------------------------ tempo
@@ -250,6 +296,8 @@ class HubController:
                 self.toast = None
         if self.col:
             self.col.update(dt)
+        if self.adopt:
+            self.adopt.update(dt)
         if self.mode == "run" and self.rc:
             self.rc.update(dt)
             self._check_run_end()

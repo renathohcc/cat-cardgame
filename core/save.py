@@ -40,6 +40,18 @@ class SaveData:
         "breeds_seen": [], "perfect_cats": []})
     items: dict[str, Any] = field(default_factory=lambda: {"nature_item": False})
     settings: dict[str, Any] = field(default_factory=dict)
+    pending_adoption: dict[str, Any] | None = None   # {cats: [Cat], result, nodes_cleared}
+
+
+def register_dex(save: SaveData, cat: Cat) -> None:
+    """Registra raca vista e gato perfeito (IV 5/5) na dex, sem duplicar."""
+    seen = save.dex.setdefault("breeds_seen", [])
+    if cat.breed not in seen:
+        seen.append(cat.breed)
+    if cat.iv_atk == 5 and cat.iv_hp == 5:
+        perfect = save.dex.setdefault("perfect_cats", [])
+        if cat.id not in perfect:
+            perfect.append(cat.id)
 
 
 def meta_cfg(content: Content) -> dict[str, Any]:
@@ -66,25 +78,34 @@ def new_game(content: Content, rng: Random) -> SaveData:
         cat.id = format_cat_id(save.next_cat_id)
         save.next_cat_id += 1
         save.cats.append(cat)
+        register_dex(save, cat)
     save.deck = [c.id for c in save.cats][: content.rules["duel"]["deck_size"]]
     return save
 
 
 # ------------------------------------------------------------ serializacao
+def _cat_to_dict(c: Cat) -> dict[str, Any]:
+    d = asdict(c)
+    if d.get("name") is None:
+        d.pop("name", None)
+    return d
+
+
 def save_to_dict(save: SaveData) -> dict[str, Any]:
-    cats = []
-    for c in save.cats:
-        d = asdict(c)
-        if d.get("name") is None:
-            d.pop("name", None)
-        cats.append(d)
-    return {
+    cats = [_cat_to_dict(c) for c in save.cats]
+    out = {
         "schema_version": SCHEMA_VERSION, "cats": cats, "deck": list(save.deck),
         "coins": save.coins, "next_cat_id": save.next_cat_id,
         "breeding": copy.deepcopy(save.breeding), "pity": copy.deepcopy(save.pity),
         "progress": copy.deepcopy(save.progress), "dex": copy.deepcopy(save.dex),
         "items": copy.deepcopy(save.items), "settings": copy.deepcopy(save.settings),
     }
+    if save.pending_adoption is not None:
+        p = save.pending_adoption
+        out["pending_adoption"] = {
+            "cats": [_cat_to_dict(c) for c in p["cats"]],
+            "result": p["result"], "nodes_cleared": p["nodes_cleared"]}
+    return out
 
 
 def _int(v: Any, where: str, lo: int, hi: int | None = None) -> int:
@@ -146,7 +167,7 @@ def save_from_dict(d: Any, content: Content | None = None) -> SaveData:
     missing = [k for k in _KEYS if k not in d]
     if missing:
         raise ValueError(f"save invalido: faltam campos {missing}")
-    extra = [k for k in d if k not in _KEYS]
+    extra = [k for k in d if k not in _KEYS and k != "pending_adoption"]
     if extra:
         raise ValueError(f"save invalido: campos desconhecidos {extra}")
     if not isinstance(d["cats"], list) or not isinstance(d["deck"], list) \
@@ -176,7 +197,11 @@ def save_from_dict(d: Any, content: Content | None = None) -> SaveData:
             raise ValueError(f"save invalido: breeding[{i}] usa gato inexistente")
         _int(b["runs_left"], f"breeding[{i}].runs_left", 0)
     next_id = _int(d["next_cat_id"], "next_cat_id", 1)
-    for cid in by_id:
+    pending = _pending_from_dict(d.get("pending_adoption"), content, by_id)
+    all_ids = list(by_id)
+    if pending is not None:
+        all_ids += [c.id for c in pending["cats"]]
+    for cid in all_ids:
         m = re.fullmatch(r"c-(\d+)", cid)
         if m and int(m.group(1)) >= next_id:
             raise ValueError(f"save invalido: next_cat_id ({next_id}) <= id existente '{cid}'")
@@ -197,7 +222,28 @@ def save_from_dict(d: Any, content: Content | None = None) -> SaveData:
                     next_cat_id=next_id, breeding=copy.deepcopy(d["breeding"]),
                     pity=copy.deepcopy(pity), progress=copy.deepcopy(progress),
                     dex=copy.deepcopy(dex), items=copy.deepcopy(items),
-                    settings=copy.deepcopy(settings))
+                    settings=copy.deepcopy(settings), pending_adoption=pending)
+
+
+def _pending_from_dict(p: Any, content: Content | None,
+                       by_id: dict[str, Cat]) -> dict[str, Any] | None:
+    if p is None:
+        return None
+    if not isinstance(p, dict) or set(p) != {"cats", "result", "nodes_cleared"} \
+            or not isinstance(p["cats"], list) or not isinstance(p["result"], str):
+        raise ValueError("save invalido: pending_adoption malformado")
+    _int(p["nodes_cleared"], "pending_adoption.nodes_cleared", 0)
+    cats = [_cat_from_dict(c, i, content) for i, c in enumerate(p["cats"])]
+    if any(c.stage != "adult" for c in cats):
+        raise ValueError("save invalido: pending_adoption com filhote")
+    seen = set(by_id)
+    for c in cats:
+        if c.id in seen:
+            raise ValueError(f"save invalido: id de gato repetido '{c.id}'")
+        seen.add(c.id)
+    if not cats:
+        return None
+    return {"cats": cats, "result": p["result"], "nodes_cleared": p["nodes_cleared"]}
 
 
 # ------------------------------------------------------------ arquivo

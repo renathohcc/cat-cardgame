@@ -41,5 +41,23 @@
   "items": {
     "nature_item": false
   },
-  "settings": {}
+  "settings": {},
+  "pending_adoption": {
+    "cats": [
+      {
+        "id": "c-000124",
+        "breed": "siames",
+        "name": "Bolinha",
+        "sex": "F",
+        "nature": "bravo",
+        "iv_atk": 4,
+        "iv_hp": 2,
+        "stage": "adult",
+        "rest_runs_left": 0,
+        "runs_as_kitten": 0
+      }
+    ],
+    "result": "vitoria",
+    "nodes_cleared": 3
+  }
 }

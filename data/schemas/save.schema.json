@@ -7,68 +7,7 @@
     "cats": {
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
-          },
-          "breed": {
-            "type": "string",
-            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 16
-          },
-          "sex": {
-            "enum": [
-              "M",
-              "F"
-            ]
-          },
-          "nature": {
-            "type": "string",
-            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
-          },
-          "iv_atk": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 5
-          },
-          "iv_hp": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 5
-          },
-          "stage": {
-            "enum": [
-              "kitten",
-              "adult"
-            ]
-          },
-          "rest_runs_left": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "runs_as_kitten": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "id",
-          "breed",
-          "sex",
-          "nature",
-          "iv_atk",
-          "iv_hp",
-          "stage",
-          "rest_runs_left",
-          "runs_as_kitten"
-        ],
-        "additionalProperties": false
+        "$ref": "#/$defs/cat"
       }
     },
     "deck": {
@@ -186,6 +125,40 @@
     },
     "settings": {
       "type": "object"
+    },
+    "pending_adoption": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "cats": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/cat"
+              }
+            },
+            "result": {
+              "enum": [
+                "vitoria",
+                "derrota"
+              ]
+            },
+            "nodes_cleared": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "cats",
+            "result",
+            "nodes_cleared"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "required": [
@@ -203,5 +176,71 @@
   ],
   "additionalProperties": false,
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "save"
+  "title": "save",
+  "$defs": {
+    "cat": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "breed": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "sex": {
+          "enum": [
+            "M",
+            "F"
+          ]
+        },
+        "nature": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "iv_atk": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "iv_hp": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "stage": {
+          "enum": [
+            "kitten",
+            "adult"
+          ]
+        },
+        "rest_runs_left": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "runs_as_kitten": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "breed",
+        "sex",
+        "nature",
+        "iv_atk",
+        "iv_hp",
+        "stage",
+        "rest_runs_left",
+        "runs_as_kitten"
+      ],
+      "additionalProperties": false
+    }
+  }
 }

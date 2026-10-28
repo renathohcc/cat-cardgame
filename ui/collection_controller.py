@@ -13,8 +13,10 @@ from dataclasses import dataclass
 from random import Random
 from typing import Callable
 
-from core import (SaveData, autofill_deck, available_cats, cat_stats, get_cat,
-                  new_run_from_save, rename_cat, set_deck)
+from core import (SaveData, autofill_deck, available_cats, can_donate, cat_stats,
+                  donate_cat,
+                  donation_value, get_cat, new_run_from_save, rename_cat, save_deck_draft,
+                  set_deck)
 from core.run import Run
 from core.types import Cat, Content, IllegalAction, Stats
 from ui import layout_hub as LH
@@ -54,8 +56,21 @@ class CollectionController:
         self.selected: str | None = save.cats[0].id if save.cats else None
         self.edit: str | None = None          # texto do campo de renomear (None = fechado)
         self.toast: Toast | None = None
+        self.confirm_donate = False           # dialogo "Doar <nome> por N moedas?" aberto
 
     # ------------------------------------------------------------ consultas
+    @property
+    def coins(self) -> int:
+        return self.save.coins
+
+    def donate_value(self, cat: Cat) -> int:
+        return donation_value(self.content, cat)
+
+    def donate_question(self) -> str:
+        cat = self.selected_cat()
+        if cat is None:
+            return ""
+        return f"Doar {cat.name or self.breed_name(cat)} por {self.donate_value(cat)} moedas?"
     def say(self, text: str, kind: str = "error", ttl: float = 2.5) -> None:
         self.toast = Toast(text, kind, ttl)
 
@@ -149,7 +164,8 @@ class CollectionController:
 
     # ------------------------------------------------------------ entrada
     def hit(self, pos: tuple[int, int]) -> tuple | None:
-        return LH.hit_test(pos, "colecao", rows=self.visible_ids(), rename=self.editing)
+        return LH.hit_test(pos, "colecao", rows=self.visible_ids(), rename=self.editing,
+                           donate=self.confirm_donate)
 
     def click(self, elem: tuple | None) -> str | None:
         """Trata o clique. Devolve "back" ou "start" quando o hub precisa agir."""
@@ -157,6 +173,12 @@ class CollectionController:
             return None
         kind = elem[0]
         try:
+            if self.confirm_donate:
+                if kind == "donate_yes":
+                    self.do_donate()
+                elif kind == "donate_no":
+                    self.confirm_donate = False
+                return None
             if kind == "rename_ok":
                 self.confirm_rename()
             elif kind == "rename_cancel":
@@ -174,6 +196,15 @@ class CollectionController:
                 self.cycle_filter()
             elif kind == "rename":
                 self.begin_rename()
+            elif kind == "donate":
+                if self.selected_cat() is None:
+                    self.say("Selecione um gato primeiro.")
+                else:
+                    ok, motivo = can_donate(self.content, self.save, self.selected_cat().id)
+                    if ok:
+                        self.confirm_donate = True
+                    else:
+                        self.say(motivo)
             elif kind == "complete":
                 self.complete()
             elif kind == "clear":
@@ -235,7 +266,30 @@ class CollectionController:
         if len(self.picked) == self.deck_size:
             set_deck(self.content, self.save, list(self.picked))
         else:
-            self.save.deck = list(self.picked)
+            save_deck_draft(self.save, list(self.picked), self.content)
+        self._persist()
+
+    def do_donate(self) -> None:
+        """Doa o gato selecionado (`donate_cat`); a regra dos 12 adultos e do core."""
+        self.confirm_donate = False
+        cat = self.selected_cat()
+        if cat is None:
+            return
+        name = cat.name or self.breed_name(cat)
+        ok, motivo = can_donate(self.content, self.save, cat.id)
+        if not ok:
+            self.say(motivo)
+            return
+        try:
+            coins = donate_cat(self.content, self.save, cat.id)
+        except IllegalAction as e:
+            self.say(str(e))
+            return
+        if cat.id in self.picked:
+            self.picked.remove(cat.id)
+        rows = self.rows()
+        self.selected = rows[0].cat.id if rows else None
+        self.say(f"{name} doado: +{coins} moedas.", "info")
         self._persist()
 
     def _persist(self) -> None:

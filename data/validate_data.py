@@ -138,8 +138,39 @@ def check_run(docs: dict[str, dict]) -> int:
         fail("meta.start_cats < duel.deck_size")
     if meta["name_max_length"] < 1:
         fail("meta.name_max_length < 1")
+    errors += check_adoption(docs["rules"])
     if not errors:
         print("ok run")
+    return errors
+
+
+def check_adoption(rules: dict) -> int:
+    ad = rules["adoption"]
+    errors = 0
+
+    def fail(msg: str) -> None:
+        nonlocal errors
+        print(f"FALHA adoption: {msg}")
+        errors += 1
+
+    table = ad["donation_by_iv_sum"]
+    sums = [t["min_sum"] for t in table]
+    coins = [t["coins"] for t in table]
+    if sums != sorted(set(sums)):
+        fail("donation_by_iv_sum fora de ordem crescente de min_sum")
+    if sums and sums[0] > 2:
+        fail("donation_by_iv_sum deve começar em min_sum <= 2")
+    if any(b <= a for a, b in zip(coins, coins[1:])):
+        fail("moedas de donation_by_iv_sum devem ser crescentes")
+    for key in ("iv_shift_from", "iv_shift_to"):
+        if not 1 <= ad[key] <= 5:
+            fail(f"{key} fora de 1-5")
+    if ad["iv_shift_from"] == ad["iv_shift_to"]:
+        fail("iv_shift_from == iv_shift_to")
+    if not 2 <= ad["high_iv_sum"] <= 10:
+        fail("high_iv_sum fora de 2-10")
+    if ad["pity_runs"] < 1:
+        fail("pity_runs < 1")
     return errors
 
 

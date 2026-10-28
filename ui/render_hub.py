@@ -4,6 +4,7 @@ from __future__ import annotations
 import pygame
 
 from ui import font, layout_hub as LH
+from ui.adoption_controller import AdoptionController
 from ui.collection_controller import STATE_LABEL, STATE_LONG, CollectionController
 from ui.hub_controller import HubController
 from ui.render import UIState, border, outlined, pulse, stars, tint
@@ -76,6 +77,7 @@ def draw_header(surf: pygame.Surface, col: CollectionController, ui: UIState) ->
     outlined(surf, "COLEÇÃO", 4, 3, C["text"], 2, "left")
     full = col.can_start
     outlined(surf, col.deck_text, LH.LIST_X + LH.ROW_W + 16, 6, C["good"] if full else C["warn"], 2, "right")
+    font.draw(surf, f"MOEDAS {col.coins}", 476, 8, C["warn"], 1, "right")
     font.draw(surf, "ORDEM", 4, 26, C["dim"])
     for i, key in enumerate(LH.SORT_KEYS):
         r = LH.sort_button(i)
@@ -195,7 +197,10 @@ def draw_detail(surf: pygame.Surface, col: CollectionController, ui: UIState) ->
     if cat.stage == "kitten":
         pass
     rb = LH.rename_button()
-    button(surf, rb, "RENOMEAR", ui.mouse if not col.editing else (-100, -100))
+    quiet = col.editing or col.confirm_donate
+    button(surf, rb, "RENOMEAR", (-100, -100) if quiet else ui.mouse)
+    button(surf, LH.donate_button(), f"DOAR +{col.donate_value(cat)}",
+           (-100, -100) if quiet else ui.mouse, base=(110, 80, 30))
 
 
 def draw_collection(surf: pygame.Surface, col: CollectionController, ui: UIState) -> None:
@@ -218,6 +223,8 @@ def draw_collection(surf: pygame.Surface, col: CollectionController, ui: UIState
     font.draw(surf, font.fit(col.hint(), 318), LH.LIST_X, 252, C["dim"])
     if col.editing:
         draw_rename(surf, col, ui)
+    if col.confirm_donate:
+        draw_donate_confirm(surf, col, ui)
     draw_toast_obj(surf, col.toast)
 
 
@@ -243,6 +250,103 @@ def draw_rename(surf: pygame.Surface, col: CollectionController, ui: UIState) ->
     for name, r in LH.rename_buttons().items():
         ok = name == "rename_ok"
         button(surf, r, "CONFIRMAR" if ok else "CANCELAR", ui.mouse, base=None if ok else C["card"])
+
+
+def draw_donate_confirm(surf: pygame.Surface, col: CollectionController, ui: UIState) -> None:
+    tint(surf, pygame.Rect(0, 0, W, H), (6, 8, 16), 190)
+    p = LH.donate_panel()
+    pygame.draw.rect(surf, C["panel"], p)
+    border(surf, p, C["warn"], 2)
+    font.draw(surf, "DOAR GATO?", p.centerx, p.y + 10, C["warn"], 1, "center")
+    for k, ln in enumerate(font.wrap(col.donate_question(), p.w - 24)[:2]):
+        font.draw(surf, ln, p.centerx, p.y + 28 + k * 11, C["text"], 1, "center")
+    font.draw(surf, "O gato sai da coleção para sempre.", p.centerx, p.y + 54, C["dim"], 1, "center")
+    for name, r in LH.donate_buttons().items():
+        yes = name == "donate_yes"
+        button(surf, r, "SIM, DOAR" if yes else "CANCELAR", ui.mouse,
+               base=(150, 60, 60) if yes else C["card"])
+
+
+# ------------------------------------------------------------------ adocao
+def draw_adoption(surf: pygame.Surface, ad: AdoptionController, ui: UIState) -> None:
+    outlined(surf, "ADOÇÃO", 4, 3, C["warn"], 2, "left")
+    font.draw(surf, f"MOEDAS {ad.coins}", 476, 8, C["warn"], 1, "right")
+    n = len(ad.cats())
+    font.draw(surf, f"{ad.summary()}. Adotar ou doar cada gato.", 4, 26, C["dim"])
+    font.draw(surf, f"Restam {n}", 476, 26, C["text"], 1, "right")
+    for i, cat in enumerate(ad.visible()):
+        if cat.id in ad.revealed:
+            draw_offer_card(surf, ad, cat, i, ui)
+        else:
+            draw_hidden_card(surf, i, ui)
+    nav = LH.adopt_nav()
+    button(surf, nav["reveal_all"], "REVELAR TODOS", ui.mouse, enabled=not ad.all_revealed())
+    if ad.paged:
+        button(surf, nav["prev"], "< ANT", ui.mouse, enabled=ad.page > 0, base=C["card"])
+        button(surf, nav["next"], "PRÓX >", ui.mouse, enabled=ad.page < ad.pages - 1, base=C["card"])
+        font.draw(surf, f"Pág. {ad.page + 1}/{ad.pages}", 62, 226, C["dim"])
+    font.draw(surf, "ESC volta ao menu (a oferta fica guardada)", W // 2, 240, C["slot_edge"], 1, "center")
+    draw_toast_obj(surf, ad.toast)
+
+
+def draw_hidden_card(surf: pygame.Surface, i: int, ui: UIState) -> None:
+    r = LH.adopt_card(i)
+    hot = r.collidepoint(ui.mouse)
+    pygame.draw.rect(surf, mix(C["slot"], WHITE, 0.12) if hot else C["slot"], r)
+    border(surf, r, WHITE if hot else C["panel_edge"], 1)
+    font.draw(surf, "?", r.centerx, r.centery - 14, C["slot_edge"], 4, "center")
+    font.draw(surf, "CLIQUE PARA REVELAR", r.centerx, r.bottom - 14, C["dim"], 1, "center")
+
+
+def draw_offer_card(surf: pygame.Surface, ad: AdoptionController, cat, i: int, ui: UIState) -> None:
+    r = LH.adopt_card(i)
+    tier = ad.tier(cat)
+    pygame.draw.rect(surf, mix(C["panel"], C["warn"], 0.12) if tier else C["panel"], r)
+    if tier == "perfeito":
+        edge = mix(C["warn"], WHITE, pulse(ui.t, 5.0))
+    elif tier == "alto":
+        edge = mix(C["warn"], C["panel_edge"], 0.5 * pulse(ui.t, 4.0))
+    else:
+        edge = C["panel_edge"]
+    border(surf, r, edge, 2 if tier else 1)
+    x, y, iw = r.x + 6, r.y + 6, r.w - 12
+    bcol = BREED_COLOR.get(cat.breed, DEFAULT_BREED_COLOR)
+    font.draw(surf, font.fit(ad.breed_name(cat), iw - 40), x, y, bcol)
+    font.draw(surf, "Macho" if cat.sex == "M" else "Fêmea", r.right - 6, y,
+              C["male"] if cat.sex == "M" else C["female"], 1, "right")
+    y += 11
+    font.draw(surf, font.fit(ad.nature_name(cat), iw), x, y, NATURE_COLOR.get(cat.nature, C["text"]))
+    y += 10
+    font.draw(surf, ad.nature_effect(cat), x, y, C["dim"])
+    y += 14
+    font.draw(surf, "IV ATK", x, y + 1, C["atk"])
+    stars(surf, x + 38, y, cat.iv_atk, 7)
+    y += 10
+    font.draw(surf, "IV HP", x, y + 1, C["hp"])
+    stars(surf, x + 38, y, cat.iv_hp, 7)
+    y += 14
+    st = ad.stats_of(cat)
+    cx = x
+    for txt, fill in ((f"ATK {st.atk}", C["atk"]), (f"HP {st.hp}", C["hp"]), (f"C{st.cost}", C["cost"])):
+        w = font.width(txt) + 6
+        chip(surf, cx, y, w, fill, txt)
+        cx += w + 2
+    y += 14
+    cx = x
+    for kid, nome in ad.keyword_names(cat):
+        w = font.width(nome.upper()) + 4
+        if cx + w > r.right - 6:
+            break
+        chip(surf, cx, y, w, KEYWORD_COLOR.get(kid, C["dim"]), nome.upper(), C["dark"])
+        cx += w + 2
+    y += 15
+    if tier:
+        label = "IV PERFEITO 5/5!" if tier == "perfeito" else "IV ALTO!"
+        pygame.draw.rect(surf, C["warn"], (x, y, iw, 11))
+        font.draw(surf, label, r.centerx, y + 2, C["dark"], 1, "center")
+    b = LH.adopt_buttons(i)
+    button(surf, b["adopt"], "ADOTAR", ui.mouse, base=(46, 120, 80))
+    button(surf, b["donate"], f"DOAR +{ad.value_of(cat)}", ui.mouse, base=(110, 80, 30))
 
 
 # ------------------------------------------------------------------ resultado
@@ -289,5 +393,7 @@ def draw_hub_frame(surf: pygame.Surface, hub: HubController, ui: UIState) -> Non
         draw_menu(surf, hub, ui)
     elif hub.mode == "colecao":
         draw_collection(surf, hub.col, ui)
+    elif hub.mode == "adocao":
+        draw_adoption(surf, hub.adopt, ui)
     else:
         draw_result(surf, hub, ui)

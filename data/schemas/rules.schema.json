@@ -241,6 +241,82 @@
         "name_max_length"
       ],
       "additionalProperties": false
+    },
+    "adoption": {
+      "type": "object",
+      "properties": {
+        "nodes_per_cat": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "victory_bonus_cats": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "iv_shift_per_node": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "iv_shift_from": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "iv_shift_to": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "pity_runs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "high_iv_sum": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10
+        },
+        "donation_by_iv_sum": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "min_sum": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 10
+              },
+              "coins": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "min_sum",
+              "coins"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "kitten_donation_factor": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "nodes_per_cat",
+        "victory_bonus_cats",
+        "iv_shift_per_node",
+        "iv_shift_from",
+        "iv_shift_to",
+        "pity_runs",
+        "high_iv_sum",
+        "donation_by_iv_sum",
+        "kitten_donation_factor"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -250,7 +326,8 @@
     "iv_weights",
     "deadlock",
     "breed",
-    "meta"
+    "meta",
+    "adoption"
   ],
   "additionalProperties": false,
   "$schema": "https://json-schema.org/draft/2020-12/schema",

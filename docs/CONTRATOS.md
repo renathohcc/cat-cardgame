@@ -257,7 +257,16 @@ autofill_deck(content, save, picked) -> ids    # completa com maior ATK+HP finai
 new_run(content, rng, cats=None) ; new_run_from_save(content, save, rng)
 ```
 `rules.meta`: `start_cats` (12) e `name_max_length` (16). O save **não guarda run em andamento** (run interrompida = abandonada = derrota); `name` ausente = nome padrão; o `deck` do save pode ter menos de 12 ids (só `set_deck` exige 12).
-**5b/5c (pendente):** `breed(...)`, `age_cats_after_run(...)`, `adopt(...)`, `donate(...)`.
+**5b (feito, 2026-10-28):** `core/adoption.py`; `rules.adoption` (`nodes_per_cat` 2, `victory_bonus_cats` 2, `iv_shift_per_node` 2, `iv_shift_from` 1, `iv_shift_to` 5, `pity_runs` 5, `high_iv_sum` 8, `donation_by_iv_sum` [{min_sum, coins}], `kitten_donation_factor` 0.5); save ganha `pending_adoption` opcional `{cats, result, nodes_cleared}` (ids já reservados em `next_cat_id`).
+```
+adoption_weights(content, nodes_cleared) ; adoption_count(content, nodes_cleared, result) ; donation_value(content, cat)
+create_adoption(content, save, rng, result, nodes_cleared)  # sorteia, aplica pity e best_distance, preenche pending_adoption; 0 gatos = sem pendente; IllegalAction se já há pendente
+adopt(content, save, cat_id) -> Cat ; donate_offer(content, save, cat_id) -> moedas ; donate_cat(content, save, cat_id) -> moedas ; has_pending_adoption(save)
+save_deck_draft(save, cat_ids, content=None)               # deck de 0 a 12 ids válidos, sem exigir 12
+roll_cat(..., iv_weights=None)
+```
+Pity: contador `pity.runs_without_high_iv` só anda em runs cuja oferta tem >= 1 gato (oferta vazia não conta nem dispara): sobe 1 se nenhum gato tem soma de IVs >= 8 e zera se algum tem; com contador >= 5 o pity troca o gato de menor soma (empate: o primeiro da lista) por um alto, nunca cria gato em oferta vazia. `can_donate(content, save, cat_id) -> (bool, motivo)` é a consulta usada pela UI. `donate_cat` recusa gato em `breeding` e doação que deixe < 12 adultos disponíveis. `dex` atualizado em `new_game` e `adopt`. A UI chama `create_adoption` ao fim da run com `run.result` e `run.nodes_cleared`.
+**5c (pendente):** `breed(...)`, `age_cats_after_run(...)`.
 
 ### 2.6 CLI
 `python -m core.cli` é o único lugar que imprime e lê entrada.

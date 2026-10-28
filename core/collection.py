@@ -6,7 +6,7 @@ from core.save import SaveData, name_max_length
 from core.types import Cat, Content, IllegalAction
 
 __all__ = ["rename_cat", "available_cats", "set_deck", "autofill_deck",
-           "cat_stats", "get_cat", "deck_cats"]
+           "cat_stats", "get_cat", "deck_cats", "save_deck_draft"]
 
 
 def get_cat(save: SaveData, cat_id: str) -> Cat:
@@ -58,6 +58,17 @@ def set_deck(content: Content, save: SaveData, cat_ids: list[str]) -> None:
     ids = list(cat_ids)
     if len(ids) != size:
         raise IllegalAction(f"o deck precisa de exatamente {size} gatos (veio {len(ids)})")
+    _check_ids(save, ids)
+    save.deck = ids
+
+
+def save_deck_draft(save: SaveData, cat_ids: list[str],
+                    content: Content | None = None) -> None:
+    """Rascunho: grava 0 a deck_size ids validos (distintos, disponiveis), sem exigir 12."""
+    ids = list(cat_ids)
+    size = content.rules["duel"]["deck_size"] if content is not None else 12
+    if len(ids) > size:
+        raise IllegalAction(f"o deck nao pode ter mais de {size} gatos")
     _check_ids(save, ids)
     save.deck = ids
 

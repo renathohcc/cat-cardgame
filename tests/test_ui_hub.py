@@ -911,7 +911,8 @@ def test_hit_test_resultado(content):
 @pytest.mark.parametrize("cena", HUB_SCENES)
 def test_cena_renderiza_headless_e_desenha_algo(cena):
     assert set(HUB_SCENES) == {"menu", "menu_confirmar", "menu_corrompido", "colecao",
-                               "colecao_deck", "renomear", "resultado"}
+                               "colecao_deck", "renomear", "resultado", "adocao",
+                               "adocao_vazia", "doar_confirmar"}
     hub, ui = make(SEED, cena)
     surf = pygame.Surface((W, H))
     surf.fill((0, 0, 0))

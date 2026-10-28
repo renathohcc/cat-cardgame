@@ -20,8 +20,11 @@ def _roll_iv(rng: Random, ivs: list[int], weights: list[int]) -> int:
 
 
 def roll_cat(content: Content, rng: Random, breed_id: str | None = None,
-             stage: Stage = "adult") -> Cat:
+             stage: Stage = "adult", iv_weights: dict[int, int] | None = None) -> Cat:
     ivs, weights = _iv_table(content)
+    if iv_weights is not None:
+        ivs = sorted(iv_weights)
+        weights = [iv_weights[i] for i in ivs]
     if breed_id is None:
         breed_id = rng.choice(list(content.breeds))
     elif breed_id not in content.breeds:

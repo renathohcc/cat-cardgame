@@ -74,7 +74,22 @@ def detail_panel() -> pygame.Rect:
 
 def rename_button() -> pygame.Rect:
     d = detail_panel()
-    return pygame.Rect(d.x + 6, d.bottom - 22, d.w - 12, 16)
+    return pygame.Rect(d.x + 6, d.bottom - 22, 68, 16)
+
+
+def donate_button() -> pygame.Rect:
+    d = detail_panel()
+    return pygame.Rect(d.x + 78, d.bottom - 22, d.w - 84, 16)
+
+
+def donate_panel() -> pygame.Rect:
+    return pygame.Rect(90, 80, 300, 100)
+
+
+def donate_buttons() -> dict[str, pygame.Rect]:
+    p = donate_panel()
+    return {"donate_yes": pygame.Rect(p.x + 14, p.bottom - 30, 128, 22),
+            "donate_no": pygame.Rect(p.right - 142, p.bottom - 30, 128, 22)}
 
 
 def action_buttons() -> dict[str, pygame.Rect]:
@@ -105,9 +120,47 @@ def result_button() -> pygame.Rect:
     return pygame.Rect(W // 2 - 80, 214, 160, 24)
 
 
+# ------------------------------------------------------------------ adocao
+ADOPT_PER_PAGE = 4
+
+
+def adopt_card(i: int) -> pygame.Rect:
+    return pygame.Rect(6 + i * 118, 40, 114, 176)
+
+
+def adopt_buttons(i: int) -> dict[str, pygame.Rect]:
+    c = adopt_card(i)
+    return {"adopt": pygame.Rect(c.x + 5, c.bottom - 42, c.w - 10, 18),
+            "donate": pygame.Rect(c.x + 5, c.bottom - 22, c.w - 10, 18)}
+
+
+def adopt_nav() -> dict[str, pygame.Rect]:
+    return {"prev": pygame.Rect(6, 222, 50, 16), "reveal_all": pygame.Rect(150, 222, 180, 16),
+            "next": pygame.Rect(424, 222, 50, 16)}
+
+
+def adopt_hit(pos: tuple[int, int], ids: list[str], revealed: set[str], paged: bool) -> tuple | None:
+    for i, cid in enumerate(ids):
+        if cid in revealed:
+            for name, r in adopt_buttons(i).items():
+                if r.collidepoint(pos):
+                    return (name, cid)
+        elif adopt_card(i).collidepoint(pos):
+            return ("reveal", cid)
+    nav = adopt_nav()
+    if nav["reveal_all"].collidepoint(pos):
+        return ("reveal_all",)
+    if paged:
+        if nav["prev"].collidepoint(pos):
+            return ("page", -1)
+        if nav["next"].collidepoint(pos):
+            return ("page", 1)
+    return None
+
+
 # ------------------------------------------------------------------ cliques
 def hit_test(pos: tuple[int, int], mode: str, *, rows: list[str] | None = None,
-             confirm: bool = False, rename: bool = False,
+             confirm: bool = False, rename: bool = False, donate: bool = False,
              menu_enabled: dict[str, bool] | None = None) -> tuple | None:
     if mode == "menu":
         if confirm:
@@ -121,6 +174,11 @@ def hit_test(pos: tuple[int, int], mode: str, *, rows: list[str] | None = None,
     elif mode == "colecao":
         if rename:
             for name, r in rename_buttons().items():
+                if r.collidepoint(pos):
+                    return (name,)
+            return None
+        if donate:
+            for name, r in donate_buttons().items():
                 if r.collidepoint(pos):
                     return (name,)
             return None
@@ -138,6 +196,8 @@ def hit_test(pos: tuple[int, int], mode: str, *, rows: list[str] | None = None,
             return ("filter",)
         if rename_button().collidepoint(pos):
             return ("rename",)
+        if donate_button().collidepoint(pos):
+            return ("donate",)
         for name, r in action_buttons().items():
             if r.collidepoint(pos):
                 return (name,)

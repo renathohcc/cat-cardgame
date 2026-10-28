@@ -8,5 +8,11 @@
   "iv_weights": {"1": 30, "2": 25, "3": 25, "4": 15, "5": 5},
   "deadlock": {"variation": [-1, 0, 1], "min_damage": 1, "stall_rounds": 5},
   "breed": {"mutation_chance": null, "base_runs": 2, "growth_runs": 2},
-  "meta": {"start_cats": 12, "name_max_length": 16}
+  "meta": {"start_cats": 12, "name_max_length": 16},
+  "adoption": {"nodes_per_cat": 2, "victory_bonus_cats": 2, "iv_shift_per_node": 2,
+               "iv_shift_from": 1, "iv_shift_to": 5, "pity_runs": 5, "high_iv_sum": 8,
+               "donation_by_iv_sum": [{"min_sum": 2, "coins": 1}, {"min_sum": 5, "coins": 2},
+                                      {"min_sum": 7, "coins": 3}, {"min_sum": 8, "coins": 4},
+                                      {"min_sum": 10, "coins": 5}],
+               "kitten_donation_factor": 0.5}
 }
