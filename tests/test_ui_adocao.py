@@ -31,6 +31,12 @@ from ui.render_hub import draw_hub_frame
 from ui.scenes_hub import make
 from ui.theme import H, W
 
+def _col(h) -> None:
+    """O hub agora abre no cercado (Criatorio animado): segue o fluxo antigo (adocao pendente
+    ou colecao) pelos botoes do painel."""
+    if h.mode == "cercado":
+        h.click(("pen_btn", "adocao" if h.adoption_pending else "colecao"))
+
 SEED = 7
 SEM_GATOS = "Nenhum gato para adotar desta vez"
 MANTER_12 = "Precisa manter 12 adultos disponíveis."
@@ -66,6 +72,7 @@ def hub_com_oferta(content, tmp_path: Path, n: int, ivs=None, *, abrir: bool = T
     h = HubController(content, p, SEED, ai_delay=0.0)
     if abrir:
         h.click(("menu", "continue"))
+        _col(h)
         assert h.mode == "adocao"
     return h, p, ids
 
@@ -140,6 +147,7 @@ def test_fim_da_run_cria_oferta_e_grava_uma_unica_vez(content, tmp_path, monkeyp
                                                       result, nodes, abandono, esperado):
     h = HubController(content, tmp_path / "save.json", SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
     chamadas = espiar(monkeypatch)
     h.rc, h.mode = RunFalsa(result, nodes, abandono), "run"
     h.click(None)
@@ -154,6 +162,7 @@ def test_fim_da_run_cria_oferta_e_grava_uma_unica_vez(content, tmp_path, monkeyp
 def test_abandono_real_chama_create_adoption_com_abandono(content, tmp_path, monkeypatch):
     h = HubController(content, tmp_path / "save.json", SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
     h.click(("start",))
     chamadas = espiar(monkeypatch)
     h.key_escape()
@@ -165,6 +174,7 @@ def test_abandono_real_chama_create_adoption_com_abandono(content, tmp_path, mon
 def test_oferta_com_zero_gatos_mostra_aviso_e_volta_a_colecao(content, tmp_path):
     h = HubController(content, tmp_path / "save.json", SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
     h.click(("start",))
     h.key_escape()
     h.click(("quit_yes",))                    # 0 nos vencidos: sem gatos
@@ -173,6 +183,7 @@ def test_oferta_com_zero_gatos_mostra_aviso_e_volta_a_colecao(content, tmp_path)
     assert not has_pending_adoption(read_save(tmp_path / "save.json", content))
     draw_hub_frame(pygame.Surface((W, H)), h, UIState())
     h.click(h.hit(LH.result_button().center))
+    _col(h)
     assert h.mode == "colecao"
 
 
@@ -275,6 +286,7 @@ def test_terminar_todos_volta_a_colecao_sem_oferta_pendente(content, tmp_path):
     revelar_todos(h)
     h.click(("adopt", ids[0]))
     h.click(("donate", ids[1]))
+    _col(h)
     assert h.mode == "colecao" and h.adopt is None
     s = read_save(p, content)
     assert s.pending_adoption is None and not has_pending_adoption(s)
@@ -286,6 +298,7 @@ def test_oferta_de_5_decidida_nas_duas_paginas(content, tmp_path):
     revelar_todos(h)
     for cid in ids:
         h.click(("adopt", cid))
+    _col(h)
     assert h.mode == "colecao"
     assert len(read_save(p, content).cats) == 12 + 5
 
@@ -332,6 +345,7 @@ def test_falha_de_gravacao_ao_doar_vira_aviso(content, tmp_path):
 def test_falha_de_gravacao_no_fim_da_run_com_oferta_nao_levanta(content, tmp_path):
     h = HubController(content, caminho_invalido(tmp_path), SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
     h.rc, h.mode = RunFalsa("vitoria", 6), "run"
     h.click(None)
     assert h.mode == "adocao" and "salvar" in h.toast.text.lower()
@@ -342,6 +356,7 @@ def test_continuar_com_oferta_pendente_abre_a_adocao_antes_da_colecao(content, t
     h, p, ids = hub_com_oferta(content, tmp_path, 3, abrir=False)
     assert "(adoção pendente)" in h.save_summary()
     h.click(("menu", "continue"))
+    _col(h)
     assert h.mode == "adocao" and h.adopt.visible_ids() == ids
 
 
@@ -350,6 +365,8 @@ def test_continuar_sem_oferta_abre_a_colecao(content, tmp_path):
     write_save(new_game(content, Random(SEED)), p)
     h = HubController(content, p, SEED, ai_delay=0.0)
     h.click(("menu", "continue"))
+    _col(h)
+    _col(h)
     assert h.mode == "colecao" and h.adopt is None
 
 
@@ -358,9 +375,10 @@ def test_esc_na_adocao_volta_ao_menu_e_mantem_a_oferta(content, tmp_path):
     revelar_todos(h)
     h.click(("adopt", ids[0]))
     h.key_escape()
-    assert h.mode == "menu" and h.adopt is None
+    assert h.mode == "cercado" and h.adopt is None      # ESC volta ao cercado; a oferta fica
+    assert h.adoption_pending
     assert [c.id for c in read_save(p, content).pending_adoption["cats"]] == ids[1:]
-    h.click(("menu", "continue"))
+    h.click(("pen_btn", "adocao"))                      # botao ADOCAO reabre
     assert h.mode == "adocao" and h.adopt.visible_ids() == ids[1:]
     assert h.adopt.revealed == set()           # cartoes voltam escondidos
 
@@ -371,6 +389,7 @@ def test_fechar_e_reabrir_nao_resorteia_a_oferta(content, tmp_path):
     h.key_escape()
     h2 = HubController(content, p, SEED + 99, ai_delay=0.0)       # outra seed: nada muda
     h2.click(("menu", "continue"))
+    _col(h2)
     assert h2.adopt.visible_ids() == ids
     assert [dataclasses.asdict(c) for c in h2.save.pending_adoption["cats"]] == antes
     assert h2.save.next_cat_id == h.save.next_cat_id
@@ -382,6 +401,8 @@ def hub_colecao_disco(content, tmp_path: Path, n_gatos: int):
     write_save(save_grande(content, n_gatos), p)
     h = HubController(content, p, SEED, ai_delay=0.0)
     h.click(("menu", "continue"))
+    _col(h)
+    _col(h)
     assert h.mode == "colecao"
     return h, p
 
@@ -431,6 +452,7 @@ def test_doar_gato_do_deck_tira_do_deck_e_grava_rascunho(content, tmp_path):
     assert cid not in s.deck and len(s.deck) == 11
     h2 = HubController(content, p, SEED, ai_delay=0.0)
     h2.click(("menu", "continue"))
+    _col(h2)
     assert h2.col.picked == s.deck and h2.col.deck_text == "Deck 11/12"
 
 
@@ -439,6 +461,7 @@ def test_doacao_recusada_com_12_adultos(content, tmp_path):
     write_save(new_game(content, Random(SEED)), p)
     h = HubController(content, p, SEED, ai_delay=0.0)
     h.click(("menu", "continue"))
+    _col(h)
     antes = p.read_bytes()
     h.click(("donate",))
     h.click(("donate_yes",))
@@ -462,6 +485,7 @@ def test_contador_de_moedas_acumula_adocao_e_colecao(content, tmp_path):
     h.click(("adopt", ids[0]))
     valor_oferta = donation_value(content, h.adopt.cats()[0])
     h.click(("donate", ids[1]))
+    _col(h)
     assert h.mode == "colecao" and h.col.coins == valor_oferta
     cat = h.col.selected_cat()
     h.click(("donate",))
@@ -531,6 +555,7 @@ def test_layout_adocao_vazia_e_resultado():
     surf = pygame.Surface((W, H))
     draw_hub_frame(surf, hub, ui)
     hub.click(("result_back",))
+    _col(hub)
     assert hub.mode == "colecao"
 
 
@@ -560,8 +585,10 @@ def test_layout_botoes_renomear_e_doar_no_painel_de_detalhe():
 # ------------------------------------------------------------------ backup do NOVO JOGO (.bak)
 def novo_jogo_confirmado(h: HubController) -> None:
     h.click(("menu", "new_game"))
+    _col(h)
     if h.confirm_new:
         h.click(("confirm_yes",))
+    _col(h)
     assert h.mode == "colecao"
 
 
@@ -599,6 +626,7 @@ def test_novo_jogo_cancelado_nao_cria_bak(content, tmp_path):
     write_save(new_game(content, Random(SEED)), p)
     h = HubController(content, p, SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
     h.click(("confirm_no",))
     assert not (tmp_path / "save.json.bak").exists()
 

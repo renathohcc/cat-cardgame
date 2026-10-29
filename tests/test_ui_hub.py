@@ -30,6 +30,12 @@ from ui.render_hub import draw_hub_frame
 from ui.scenes_hub import HUB_SCENES, make
 from ui.theme import H, W
 
+def _col(h) -> None:
+    """O hub agora abre no cercado (Criatorio animado): segue o fluxo antigo (adocao pendente
+    ou colecao) pelos botoes do painel."""
+    if h.mode == "cercado":
+        h.click(("pen_btn", "adocao" if h.adoption_pending else "colecao"))
+
 SEED = 7
 
 
@@ -52,6 +58,8 @@ def hub_com_save(content, tmp_path: Path) -> tuple[HubController, Path]:
 
 def entrar_colecao(h: HubController) -> None:
     h.click(("menu", "continue"))
+    _col(h)
+    _col(h)
     assert h.mode == "colecao"
 
 
@@ -86,12 +94,14 @@ def test_sem_save_continuar_desabilitado_e_novo_jogo_disponivel(content, tmp_pat
     assert h.mode == "menu" and not p.exists()
     assert h.menu_enabled() == {"continue": False, "new_game": True, "quit": True}
     h.click(("menu", "continue"))
+    _col(h)
     assert h.mode == "menu"
 
 
 def test_novo_jogo_sem_save_nao_pede_confirmacao_e_grava(content, tmp_path):
     h, p = hub_disco(content, tmp_path)
     h.click(("menu", "new_game"))
+    _col(h)
     assert not h.confirm_new and h.mode == "colecao"
     assert p.exists()
     s = read_save(p, content)
@@ -109,6 +119,7 @@ def test_novo_jogo_com_save_pede_confirmacao(content, tmp_path):
     h, p = hub_com_save(content, tmp_path)
     antes = p.read_bytes()
     h.click(("menu", "new_game"))
+    _col(h)
     assert h.confirm_new and h.mode == "menu"
     assert p.read_bytes() == antes
 
@@ -117,6 +128,7 @@ def test_cancelar_confirmacao_mantem_save(content, tmp_path):
     h, p = hub_com_save(content, tmp_path)
     antes = p.read_bytes()
     h.click(("menu", "new_game"))
+    _col(h)
     h.click(("confirm_no",))
     assert not h.confirm_new and h.mode == "menu" and p.read_bytes() == antes
 
@@ -124,6 +136,7 @@ def test_cancelar_confirmacao_mantem_save(content, tmp_path):
 def test_esc_na_confirmacao_cancela(content, tmp_path):
     h, p = hub_com_save(content, tmp_path)
     h.click(("menu", "new_game"))
+    _col(h)
     h.key_escape()
     assert not h.confirm_new and h.mode == "menu"
 
@@ -133,7 +146,9 @@ def test_confirmar_novo_jogo_substitui_o_save_em_disco(content, tmp_path):
     antes = read_save(p, content)
     h2 = HubController(content, p, SEED + 100, ai_delay=0.0)
     h2.click(("menu", "new_game"))
+    _col(h2)
     h2.click(("confirm_yes",))
+    _col(h2)
     assert h2.mode == "colecao" and not h2.confirm_new
     depois = read_save(p, content)
     assert save_to_dict(depois) == save_to_dict(h2.save)
@@ -143,8 +158,10 @@ def test_confirmar_novo_jogo_substitui_o_save_em_disco(content, tmp_path):
 def test_cliques_no_menu_ignoram_itens_quando_a_confirmacao_esta_aberta(content, tmp_path):
     h, _ = hub_com_save(content, tmp_path)
     h.click(("menu", "new_game"))
+    _col(h)
     h.click(("menu", "quit"))
     h.click(("menu", "continue"))
+    _col(h)
     assert not h.wants_quit and h.mode == "menu" and h.confirm_new
 
 
@@ -158,6 +175,7 @@ def test_hub_em_memoria_nao_grava_nada(content, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     h = HubController(content, None, SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
     h.col.complete()
     assert list(tmp_path.iterdir()) == []
 
@@ -206,6 +224,7 @@ def test_save_corrompido_nao_derruba_e_so_permite_novo_jogo(content, tmp_path, c
     assert h.menu_enabled()["continue"] is False and h.menu_enabled()["new_game"]
     assert "orromp" in h.save_summary()
     h.click(("menu", "continue"))
+    _col(h)
     assert h.mode == "menu"
     # nada impede de desenhar o menu com o aviso
     draw_hub_frame(pygame.Surface((W, H)), h, UIState())
@@ -217,8 +236,10 @@ def test_novo_jogo_sobre_save_corrompido_recria_o_save(content, tmp_path, corrom
     corromper(p, content)
     h = HubController(content, p, SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
     if h.confirm_new:
         h.click(("confirm_yes",))
+    _col(h)
     assert h.mode == "colecao" and h.load_error is None
     assert len(read_save(p, content).cats) == len(h.save.cats)
 
@@ -229,6 +250,7 @@ def test_save_corrompido_e_preservado_ate_confirmar_novo_jogo(content, tmp_path)
     antes = p.read_bytes()
     h = HubController(content, p, SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
     if h.confirm_new:
         assert p.read_bytes() == antes
         h.click(("confirm_no",))
@@ -245,6 +267,8 @@ def caminho_invalido(tmp_path: Path) -> Path:
 def test_falha_de_gravacao_no_novo_jogo_vira_aviso_sem_excecao(content, tmp_path):
     h = HubController(content, caminho_invalido(tmp_path), SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
+    _col(h)
     assert h.mode == "colecao"
     assert h.col.toast is not None and "salvar" in h.col.toast.text.lower()
 
@@ -252,6 +276,7 @@ def test_falha_de_gravacao_no_novo_jogo_vira_aviso_sem_excecao(content, tmp_path
 def test_falha_de_gravacao_ao_mudar_deck_e_renomear_nao_levanta(content, tmp_path):
     h = HubController(content, caminho_invalido(tmp_path), SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
     h.col.toast = None
     h.col.clear()
     assert h.col.toast is not None and "salvar" in h.col.toast.text.lower()
@@ -284,6 +309,7 @@ def test_persist_devolve_texto_de_erro(content, tmp_path):
 def test_falha_de_gravacao_no_fim_da_run_vira_aviso(content, tmp_path):
     h = HubController(content, caminho_invalido(tmp_path), SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
     h.click(("start",))
     h.key_escape()
     h.click(("quit_yes",))
@@ -339,6 +365,7 @@ def test_iniciar_run_so_com_exatamente_12(content):
         clicar_linha(h, r.cat.id)
     assert h.col.deck_count == 11 and not h.col.can_start
     h.click(("start",))
+    _col(h)
     assert h.mode == "colecao" and h.col.toast is not None
     clicar_linha(h, h.col.rows()[11].cat.id)
     assert h.col.can_start
@@ -350,6 +377,7 @@ def test_iniciar_run_com_deck_vazio_nao_inicia(content):
     h = hub_grande(content, 14)
     h.click(("clear",))
     h.click(("start",))
+    _col(h)
     assert h.mode == "colecao"
 
 
@@ -711,6 +739,7 @@ def test_estatisticas_da_linha_vem_do_core(content):
 # ------------------------------------------------------------------ fim da run
 def iniciar_run(h: HubController) -> None:
     h.click(("menu", "new_game"))
+    _col(h)
     if h.confirm_new:
         h.click(("confirm_yes",))
     h.click(("start",))
@@ -730,6 +759,7 @@ def test_abandonar_a_run_mostra_resultado_e_volta_a_colecao(content, tmp_path):
     assert h.result_text == "Run encerrada: derrota, nós vencidos 0"
     assert h.result_detail and "abandon" in h.result_detail[0]
     h.click(h.hit(LH.result_button().center))
+    _col(h)
     assert h.mode == "colecao"
     assert h.col.deck_count == 12
 
@@ -740,6 +770,7 @@ def test_resultado_volta_a_colecao_por_teclado(content, tmp_path, como):
     iniciar_run(h)
     abandonar(h)
     (h.key_enter if como == "enter" else h.key_escape)()
+    _col(h)
     assert h.mode == "colecao"
 
 
@@ -766,7 +797,8 @@ def test_nova_run_usa_semente_diferente_e_funciona_em_sequencia(content, tmp_pat
     iniciar_run(h)
     abandonar(h)
     h.key_enter()
-    h.click(("start",))
+    assert h.mode == "cercado"
+    h.click(("pen_btn", "start"))            # botao INICIAR RUN do cercado
     assert h.mode == "run" and h.runs_started == 2
 
 
@@ -774,10 +806,15 @@ def test_esc_na_colecao_volta_ao_menu_e_esc_na_edicao_so_cancela(content):
     h = hub_grande(content, 12)
     h.click(("rename",))
     h.key_escape()
+    _col(h)
     assert h.mode == "colecao" and not h.editing_text
     h.key_escape()
-    assert h.mode == "menu"
+    assert h.mode == "cercado"               # ESC na colecao volta ao cercado
+    h.key_escape()
+    assert h.mode == "menu"                  # e ESC no cercado, ao menu
     h.click(("menu", "continue"))
+    _col(h)
+    _col(h)
     assert h.mode == "colecao"
 
 

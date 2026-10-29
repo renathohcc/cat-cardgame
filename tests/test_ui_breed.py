@@ -32,6 +32,12 @@ from ui.render_hub import draw_hub_frame
 from ui.scenes_hub import BREED_SCENES, make
 from ui.theme import H, W
 
+def _col(h) -> None:
+    """O hub agora abre no cercado (Criatorio animado): segue o fluxo antigo (adocao pendente
+    ou colecao) pelos botoes do painel."""
+    if h.mode == "cercado":
+        h.click(("pen_btn", "adocao" if h.adoption_pending else "colecao"))
+
 SEED = 7
 TELA = pygame.Rect(0, 0, W, H)
 
@@ -84,6 +90,8 @@ def hub_disco(content, tmp_path: Path, n: int = 16):
     write_save(save_com(content, n), p)
     h = HubController(content, p, SEED, ai_delay=0.0)
     h.click(("menu", "continue"))
+    _col(h)
+    _col(h)
     assert h.mode == "colecao"
     return h, p
 
@@ -107,6 +115,8 @@ def terminar_run(h: HubController, result="derrota", nodes=1):
 def voltar_a_colecao(h: HubController) -> None:
     """Sai de novidades/adocao/resultado ate a colecao (adota o que for oferecido)."""
     for _ in range(40):
+        if h.mode == "cercado":
+            h.click(("pen_btn", "colecao"))
         if h.mode == "colecao":
             return
         if h.mode == "novidades":
@@ -379,6 +389,7 @@ def test_pais_saem_do_rascunho_do_deck_ao_voltar_do_criatorio(content, tmp_path)
     h.click(("start",))
     assert len(s.breeding) == 1
     h.click(("back",))
+    _col(h)
     assert h.mode == "colecao"
     assert m not in h.col.picked and f not in h.col.picked
     assert h.col.deck_count == len(h.col.picked) == 10
@@ -389,6 +400,7 @@ def test_esc_no_criatorio_volta_a_colecao(content, tmp_path):
     h, _ = hub_disco(content, tmp_path)
     h.click(("breed",))
     h.key_escape()
+    _col(h)
     assert h.mode == "colecao" and h.breed is None
 
 
@@ -501,6 +513,7 @@ def test_run_curta_vai_para_o_cabecalho_da_adocao(content, tmp_path):
     h.key_escape()
     h.short_run = True
     h.click(("menu", "continue"))
+    _col(h)
     assert h.adopt.note == SHORT_RUN_TEXT
 
 
@@ -508,6 +521,7 @@ def test_falha_de_gravacao_no_fim_da_run_com_nascimento_nao_levanta(content, tmp
     (tmp_path / "arq").write_text("x")
     h = HubController(content, tmp_path / "arq" / "x" / "save.json", SEED, ai_delay=0.0)
     h.click(("menu", "new_game"))
+    _col(h)
     h.save.cats.extend(save_com(content, 16).cats[12:])
     start_breed(content, h.save, *casal(h.save))
     terminar_run(h, "derrota", 1)

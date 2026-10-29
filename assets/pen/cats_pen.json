@@ -1,0 +1,233 @@
+{
+ "image": "cats_pen.png",
+ "size": [
+  768,
+  2560
+ ],
+ "frame": [
+  64,
+  64
+ ],
+ "anims": {
+  "vira-lata": {
+   "idle": {
+    "row": 0,
+    "frames": 5,
+    "fps": 5
+   },
+   "walk": {
+    "row": 1,
+    "frames": 8,
+    "fps": 10
+   },
+   "sleep": {
+    "row": 2,
+    "frames": 12,
+    "fps": 3
+   },
+   "play": {
+    "row": 3,
+    "frames": 9,
+    "fps": 8
+   }
+  },
+  "siames": {
+   "idle": {
+    "row": 4,
+    "frames": 5,
+    "fps": 5
+   },
+   "walk": {
+    "row": 5,
+    "frames": 8,
+    "fps": 10
+   },
+   "sleep": {
+    "row": 6,
+    "frames": 12,
+    "fps": 3
+   },
+   "play": {
+    "row": 7,
+    "frames": 9,
+    "fps": 8
+   }
+  },
+  "persa": {
+   "idle": {
+    "row": 8,
+    "frames": 5,
+    "fps": 5
+   },
+   "walk": {
+    "row": 9,
+    "frames": 8,
+    "fps": 10
+   },
+   "sleep": {
+    "row": 10,
+    "frames": 12,
+    "fps": 3
+   },
+   "play": {
+    "row": 11,
+    "frames": 9,
+    "fps": 8
+   }
+  },
+  "sphynx": {
+   "idle": {
+    "row": 12,
+    "frames": 5,
+    "fps": 5
+   },
+   "walk": {
+    "row": 13,
+    "frames": 8,
+    "fps": 10
+   },
+   "sleep": {
+    "row": 14,
+    "frames": 12,
+    "fps": 3
+   },
+   "play": {
+    "row": 15,
+    "frames": 9,
+    "fps": 8
+   }
+  },
+  "maine-coon": {
+   "idle": {
+    "row": 16,
+    "frames": 5,
+    "fps": 5
+   },
+   "walk": {
+    "row": 17,
+    "frames": 8,
+    "fps": 10
+   },
+   "sleep": {
+    "row": 18,
+    "frames": 12,
+    "fps": 3
+   },
+   "play": {
+    "row": 19,
+    "frames": 9,
+    "fps": 8
+   }
+  },
+  "vira-lata_filhote": {
+   "idle": {
+    "row": 20,
+    "frames": 5,
+    "fps": 5
+   },
+   "walk": {
+    "row": 21,
+    "frames": 8,
+    "fps": 10
+   },
+   "sleep": {
+    "row": 22,
+    "frames": 12,
+    "fps": 3
+   },
+   "play": {
+    "row": 23,
+    "frames": 9,
+    "fps": 8
+   }
+  },
+  "siames_filhote": {
+   "idle": {
+    "row": 24,
+    "frames": 5,
+    "fps": 5
+   },
+   "walk": {
+    "row": 25,
+    "frames": 8,
+    "fps": 10
+   },
+   "sleep": {
+    "row": 26,
+    "frames": 12,
+    "fps": 3
+   },
+   "play": {
+    "row": 27,
+    "frames": 9,
+    "fps": 8
+   }
+  },
+  "persa_filhote": {
+   "idle": {
+    "row": 28,
+    "frames": 5,
+    "fps": 5
+   },
+   "walk": {
+    "row": 29,
+    "frames": 8,
+    "fps": 10
+   },
+   "sleep": {
+    "row": 30,
+    "frames": 12,
+    "fps": 3
+   },
+   "play": {
+    "row": 31,
+    "frames": 9,
+    "fps": 8
+   }
+  },
+  "sphynx_filhote": {
+   "idle": {
+    "row": 32,
+    "frames": 5,
+    "fps": 5
+   },
+   "walk": {
+    "row": 33,
+    "frames": 8,
+    "fps": 10
+   },
+   "sleep": {
+    "row": 34,
+    "frames": 12,
+    "fps": 3
+   },
+   "play": {
+    "row": 35,
+    "frames": 9,
+    "fps": 8
+   }
+  },
+  "maine-coon_filhote": {
+   "idle": {
+    "row": 36,
+    "frames": 5,
+    "fps": 5
+   },
+   "walk": {
+    "row": 37,
+    "frames": 8,
+    "fps": 10
+   },
+   "sleep": {
+    "row": 38,
+    "frames": 12,
+    "fps": 3
+   },
+   "play": {
+    "row": 39,
+    "frames": 9,
+    "fps": 8
+   }
+  }
+ }
+}

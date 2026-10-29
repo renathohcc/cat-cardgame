@@ -257,6 +257,20 @@
         "max_per_breed_autofill": {
           "type": "integer",
           "minimum": 1
+        },
+        "pen_max_cats": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pen_zone_caps": {
+          "type": "object",
+          "properties": {
+            "adultos": {"type": "integer", "minimum": 1},
+            "breed": {"type": "integer", "minimum": 1},
+            "filhotes": {"type": "integer", "minimum": 1}
+          },
+          "required": ["adultos", "breed", "filhotes"],
+          "additionalProperties": false
         }
       },
       "required": [

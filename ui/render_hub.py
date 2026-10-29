@@ -141,16 +141,18 @@ def draw_row(surf: pygame.Surface, col: CollectionController, row, i: int, ui: U
               STATE_COLOR[row.state])
 
 
-def draw_detail(surf: pygame.Surface, col: CollectionController, ui: UIState) -> None:
-    d = LH.detail_panel()
+def draw_detail(surf: pygame.Surface, col: CollectionController, ui: UIState,
+                d: pygame.Rect | None = None, cat=None, close: bool = False) -> None:
+    """Painel de detalhe do gato. `d`/`cat`/`close` servem a ficha do cercado."""
+    d = d or LH.detail_panel()
     panel(surf, d)
-    cat = col.selected_cat()
+    cat = cat or col.selected_cat()
     if cat is None:
         font.draw(surf, "Selecione um gato", d.centerx, d.y + 40, C["dim"], 1, "center")
         return
     row = col.row_of(cat)
     x, y = d.x + 12, d.y + 10
-    text_fit(surf, row.label, x, y, C["warn"] if cat.name else C["text"], d.w - 24, "left", top=2)
+    text_fit(surf, row.label, x, y, C["warn"] if cat.name else C["text"], d.w - 24 - (30 if close else 0), "left", top=2)
     y += 28
     art = pygame.Rect(x, y, 96, 96)
     Wd.cat_art(surf, cat.breed, art, kitten=cat.stage == "kitten")
@@ -183,8 +185,8 @@ def draw_detail(surf: pygame.Surface, col: CollectionController, ui: UIState) ->
     Wd.keyword_row(surf, x, y + 28, d.right - 12, col.keyword_names(cat), 1)
     quiet = col.editing or col.confirm_donate
     m = (-100, -100) if quiet else ui.mouse
-    button(surf, LH.rename_button(), "RENOMEAR", m)
-    button(surf, LH.donate_button(), f"DOAR +{col.donate_value(cat)}", m, base=(120, 86, 28))
+    button(surf, LH.rename_button(d), "RENOMEAR", m)
+    button(surf, LH.donate_button(d), f"DOAR +{col.donate_value(cat)}", m, base=(120, 86, 28))
 
 
 def draw_collection(surf: pygame.Surface, col: CollectionController, ui: UIState) -> None:
@@ -203,8 +205,8 @@ def draw_collection(surf: pygame.Surface, col: CollectionController, ui: UIState
     button(surf, b["complete"], "COMPLETAR", m)
     button(surf, b["clear"], "LIMPAR", m, base=(110, 50, 60))
     button(surf, b["start"], "INICIAR RUN", m, enabled=col.can_start, scale=2)
-    button(surf, b["back"], "MENU (ESC)", m, base=C["card"])
-    button(surf, b["breed"], "CRIATÓRIO", m, base=(104, 76, 132))
+    button(surf, b["back"], "VOLTAR (ESC)", m, base=C["card"])
+    button(surf, b["breed"], "BREED", m, base=(104, 76, 132))
     text_fit(surf, col.hint(), LH.LIST_X + 4, 500, C["dim"], LH.ROW_W, "left")
     if col.editing:
         draw_rename(surf, col, ui)
@@ -270,7 +272,7 @@ def draw_adoption(surf: pygame.Surface, ad: AdoptionController, ui: UIState) -> 
         button(surf, nav["prev"], "< ANT", ui.mouse, enabled=ad.page > 0, base=C["card"])
         button(surf, nav["next"], "PRÓX >", ui.mouse, enabled=ad.page < ad.pages - 1, base=C["card"])
         font.draw(surf, f"Pág. {ad.page + 1}/{ad.pages}", nav["prev"].right + 16, nav["prev"].centery - font.CAP_H // 2, C["dim"], 1)
-    font.draw(surf, "ESC volta ao menu", W // 2, 20, C["slot_edge"], 1, "center")
+    font.draw(surf, "ESC volta ao criatório", W // 2, 20, C["slot_edge"], 1, "center")
     Wd.toast(surf, ad.toast, H - 90)
 
 
@@ -339,7 +341,7 @@ def draw_result(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
     y += 10
     for line in hub.result_detail:
         y = Wd.wrap_lines(surf, line, p.x + 20, y, p.w - 40, C["dim"], 1, 3, 16, "center") + 4
-    button(surf, LH.result_button(), "VOLTAR À COLEÇÃO", ui.mouse)
+    button(surf, LH.result_button(), "VOLTAR AO CRIATÓRIO", ui.mouse)
     font.draw(surf, "Enter ou ESC volta", W // 2, LH.result_button().bottom + 16, C["dim"], 1, "center")
     Wd.toast(surf, hub.toast)
 
@@ -363,5 +365,8 @@ def draw_hub_frame(surf: pygame.Surface, hub: HubController, ui: UIState) -> Non
     elif hub.mode == "novidades":
         from ui.render_breed import draw_news
         draw_news(surf, hub.news, ui)
+    elif hub.mode == "cercado":
+        from ui.render_pen import draw_pen
+        draw_pen(surf, hub, ui)
     else:
         draw_result(surf, hub, ui)

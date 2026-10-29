@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import math
+from datetime import datetime
 from pathlib import Path
 
 import pygame
@@ -11,15 +12,16 @@ from ui import layout as L, scenes_hub
 from ui.app import DRAG_THRESHOLD
 from ui.display import Display
 from ui.controller import load_game_content
+from ui.daycycle import fixed_clock
 from ui.hub_controller import DEFAULT_SAVE, HubController
 from ui.render import UIState
 from ui.render_hub import draw_hub_frame
 from ui.theme import H, W
 
 
-def screenshot(path: str, seed: int, scene: str) -> None:
+def screenshot(path: str, seed: int, scene: str, hora: str | None = None) -> None:
     pygame.init()
-    hub, ui = scenes_hub.make(seed, scene)
+    hub, ui = scenes_hub.make(seed, scene, hora)
     canvas = pygame.Surface((W, H))
     draw_hub_frame(canvas, hub, ui)
     out = Path(path)
@@ -27,15 +29,18 @@ def screenshot(path: str, seed: int, scene: str) -> None:
     pygame.image.save(canvas, str(out))
 
 
-async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str | None = None) -> None:
+async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str | None = None,
+              hora: str | None = None) -> None:
+    """`hora` ("HH:MM") fixa a hora do cercado; sem ela usa a hora do computador."""
     pygame.init()
     disp = Display()
     clock = pygame.time.Clock()
     if scene:
-        hub, ui = scenes_hub.make(seed, scene)
+        hub, ui = scenes_hub.make(seed, scene, hora)
         ui.mouse = (-100, -100)
     else:
-        hub, ui = HubController(load_game_content(), save_path, seed), UIState()
+        now_fn = fixed_clock(hora) if hora else datetime.now
+        hub, ui = HubController(load_game_content(), save_path, seed, clock=now_fn), UIState()
     canvas = pygame.Surface((W, H))
     press: tuple[tuple | None, tuple[int, int]] | None = None
     pygame.key.start_text_input()

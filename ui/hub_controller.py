@@ -4,13 +4,16 @@ So chama a API publica do core (`new_game`, `read_save`, `write_save`) e delega 
 `CollectionController` e a run ao `RunController`. O save so e gravado entre runs: nada de
 retomar run (fechar a janela no meio da run = run perdida, o save fica como estava).
 
-Modos: "menu" | "colecao" | "criatorio" | "run" | "novidades" | "adocao" | "resultado".
+Modos: "menu" | "cercado" (hub: Criatorio animado) | "colecao" | "criatorio" (breed) | "run" |
+"novidades" | "adocao" | "resultado". Tudo que termina (adocao, resultado, colecao) volta ao cercado.
 Elementos do menu: ("menu", "continue"|"new_game"|"quit") ("confirm_yes",) ("confirm_no",)
 Resultado: ("result_back",)
 """
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from random import Random
 
@@ -23,6 +26,9 @@ from ui.adoption_controller import AdoptionController
 from ui.breed_controller import BreedController, NewsController
 from ui.collection_controller import CollectionController
 from ui.controller import Toast
+from ui import layout_pen as LP
+from ui.pen_controller import PenController, PenEntry
+from ui.pen_geometry import load_geometry, pen_limits
 from ui.run_controller import RunController
 
 SHORT_RUN_TEXT = "Run curta: não conta para o breed"
@@ -31,8 +37,9 @@ DEFAULT_SAVE = Path(__file__).resolve().parent.parent / "saves" / "save.json"
 
 class HubController:
     def __init__(self, content: Content, save_path: Path | str | None, seed: int, *,
-                 ai_delay: float = 0.5) -> None:
+                 ai_delay: float = 0.5, clock: Callable[[], datetime] | None = None) -> None:
         self.content = content
+        self.clock = clock                        # relogio do ciclo do dia (None = meio-dia fixo; o jogo passa datetime.now)
         self.save_path = Path(save_path) if save_path is not None else None   # None = so memoria
         self.seed = seed
         self.ai_delay = ai_delay
@@ -53,6 +60,10 @@ class HubController:
         self.result_win = False
         self.result_detail: list[str] = []
         self.runs_started = 0
+        self.pen: PenController | None = None
+        self.ficha: str | None = None             # gato com a ficha aberta no cercado
+        self.breed_from = "cercado"               # para onde o BREED volta
+        self._pen_sync_clock = 0.0
         self.reload()
 
     # ------------------------------------------------------------ save
@@ -113,6 +124,80 @@ class HubController:
     def say(self, text: str, kind: str = "error", ttl: float = 2.5) -> None:
         self.toast = Toast(text, kind, ttl)
 
+    # ------------------------------------------------------------ cercado
+    def pen_max(self) -> int:
+        return pen_limits(self.content.rules)[0]
+
+    def pen_zone_caps(self) -> dict[str, int]:
+        return pen_limits(self.content.rules)[1]
+
+    def pen_geo(self):
+        return self.pen.geo if self.pen else load_geometry()
+
+    def enter_pen(self) -> None:
+        """Abre o cercado (cria o controlador na primeira vez) e sincroniza o elenco."""
+        if self.col is None and self.save is not None:
+            self.col = CollectionController(self.content, self.save, self.persist)
+        if self.pen is None:
+            self.pen = PenController(Random(self.seed * 31 + 7), load_geometry(), self.pen_max(), self.clock,
+                                 self.pen_zone_caps())
+        self.ficha = None
+        self.pen.hold(None)
+        self.mode = "cercado"
+        self.sync_pen()
+
+    def pen_entries(self) -> list[PenEntry]:
+        out: list[PenEntry] = []
+        if self.save is None or self.col is None:
+            return out
+        partner: dict[str, str] = {}
+        for b in self.save.breeding:
+            partner[b["male"]], partner[b["female"]] = b["female"], b["male"]
+        for c in self.save.cats:
+            st = self.col.state_of(c)
+            tag = {"filhote": "filhote", "breed": "breed", "deck": "deck"}.get(st, "livre")
+            out.append(PenEntry(c.id, c.breed, c.stage == "kitten", tag, partner.get(c.id)))
+        return out
+
+    def sync_pen(self) -> None:
+        if self.pen is not None:
+            self.pen.sync(self.pen_entries())
+            if self.ficha and not self._cat_exists(self.ficha):
+                self.close_ficha()
+
+    def _cat_exists(self, cat_id: str) -> bool:
+        return self.save is not None and any(c.id == cat_id for c in self.save.cats)
+
+    def open_ficha(self, cat_id: str) -> None:
+        self.ficha = cat_id
+        self.col.selected = cat_id
+        self.pen.poke(cat_id)
+        self.pen.hold(cat_id)
+
+    def close_ficha(self) -> None:
+        self.ficha = None
+        if self.pen:
+            self.pen.hold(None)
+
+    def ficha_rect(self):
+        c = self.pen.cat(self.ficha) if self.pen and self.ficha else None
+        return LP.ficha_rect(c.x if c else 0, self.pen_geo())
+
+    def pen_buttons(self) -> tuple[str, ...]:
+        return tuple(b for b in LP.BUTTONS if b != "adocao" or self.adoption_pending)
+
+    @property
+    def adoption_pending(self) -> bool:
+        return self.save is not None and has_pending_adoption(self.save)
+
+    def pen_label(self, cat_id: str) -> str:
+        """Nome mostrado ao passar o mouse: apelido ou raca."""
+        cat = next((c for c in self.save.cats if c.id == cat_id), None) if self.save else None
+        return "" if cat is None else (cat.name or self.col.breed_name(cat))
+
+    def _modal_open(self) -> bool:
+        return self.col is not None and (self.col.editing or self.col.confirm_donate)
+
     # ------------------------------------------------------------ entrada
     def hit(self, pos: tuple[int, int]) -> tuple | None:
         m = self.mode
@@ -122,6 +207,8 @@ class HubController:
             return LH.hit_test(pos, m, confirm=self.confirm_new)
         if m == "colecao":
             return self.col.hit(pos)
+        if m == "cercado":
+            return self._hit_pen(pos)
         if m == "adocao":
             return self.adopt.hit(pos)
         if m == "criatorio":
@@ -130,6 +217,69 @@ class HubController:
             return self.news.hit(pos)
         return LH.hit_test(pos, m)
 
+    def _hit_pen(self, pos: tuple[int, int]) -> tuple | None:
+        if self._modal_open():
+            return LH.hit_test(pos, "colecao", rename=self.col.editing, donate=self.col.confirm_donate)
+        if self.ficha:
+            e = LP.ficha_hit(pos, self.ficha_rect())
+            if e:
+                return e
+        e = LP.panel_hit(pos, self.pen_buttons(), self.pen_geo())
+        if e:
+            return e
+        cid = self.pen.hit(pos) if self.pen else None
+        if cid:
+            return ("pen_cat", cid)
+        oi = self.pen.hit_object(pos) if self.pen else None
+        if oi is not None:
+            return ("pen_obj", oi)
+        return ("pen_floor",) if LP.area_rect(self.pen_geo()).collidepoint(pos) else None
+
+    def _click_pen(self, elem: tuple | None) -> None:
+        if elem is None:
+            return
+        col, kind = self.col, elem[0]
+        if self._modal_open():
+            col.click(elem)
+            self.sync_pen()
+            return
+        if kind == "pen_cat":
+            self.open_ficha(elem[1])
+        elif kind == "pen_obj":
+            self.close_ficha()
+            self.pen.poke_object(elem[1])
+        elif kind in ("pen_floor", "ficha_close"):
+            self.close_ficha()
+        elif kind == "ficha_rename":
+            col.selected = self.ficha
+            col.click(("rename",))
+        elif kind == "ficha_donate":
+            col.selected = self.ficha
+            col.click(("donate",))
+        elif kind == "pen_btn":
+            self._pen_button(elem[1])
+
+    def _pen_button(self, name: str) -> None:
+        if name == "start":
+            if self.col.can_start:
+                self.start_run()
+            else:
+                self.col.click(("start",))
+        elif name == "colecao":
+            self.close_ficha()
+            self.col.refresh_deck()
+            self.mode = "colecao"
+        elif name == "adocao":
+            self.close_ficha()
+            self.open_pending_adoption()
+        elif name == "breed":
+            self.close_ficha()
+            self.breed_from = "cercado"
+            self.open_breed()
+        elif name == "menu":
+            self.close_ficha()
+            self.mode = "menu"
+
     def click(self, elem: tuple | None) -> None:
         m = self.mode
         if m == "run" and self.rc:
@@ -137,13 +287,16 @@ class HubController:
             self._check_run_end()
         elif m == "menu":
             self._click_menu(elem)
+        elif m == "cercado":
+            self._click_pen(elem)
         elif m == "colecao":
             act = self.col.click(elem)
             if act == "back":
-                self.mode = "menu"
+                self.enter_pen()
             elif act == "start":
                 self.start_run()
             elif act == "breed":
+                self.breed_from = "colecao"
                 self.open_breed()
         elif m == "criatorio":
             if self.breed.click(elem) == "back":
@@ -155,7 +308,7 @@ class HubController:
             if self.adopt.click(elem) == "done":
                 self._finish_adoption()
         elif m == "resultado" and elem == ("result_back",):
-            self.mode = "colecao"
+            self.enter_pen()
 
     def _click_menu(self, elem: tuple | None) -> None:
         if self.confirm_new:
@@ -170,8 +323,7 @@ class HubController:
         item = elem[1]
         if item == "continue" and self.can_continue:
             self.col = CollectionController(self.content, self.save, self.persist)
-            self.mode = "colecao"
-            self.open_pending_adoption()
+            self.enter_pen()
         elif item == "new_game":
             if self.has_file:
                 self.confirm_new = True
@@ -206,8 +358,11 @@ class HubController:
 
     def close_breed(self) -> None:
         self.breed = None
-        self.mode = "colecao"
         self.col.refresh_deck()          # pais em breed saem do rascunho do deck
+        if self.breed_from == "colecao":
+            self.mode = "colecao"
+        else:
+            self.enter_pen()
 
     def _finish_news(self) -> None:
         self.news = None
@@ -218,19 +373,19 @@ class HubController:
     def _finish_adoption(self) -> None:
         toast = self.adopt.toast if self.adopt else None
         self.adopt = None
-        self.mode = "colecao"
         if self.col is None:
             self.col = CollectionController(self.content, self.save, self.persist)
         self.col.toast = toast
         rows = self.col.rows()
         if self.col.selected_cat() is None and rows:
             self.col.selected = rows[0].cat.id
+        self.enter_pen()
 
     def start_new_game(self) -> None:
         bak_err = self.backup_save()
         self.adopt_save(new_game(self.content, Random(self.seed)))
         err = self.persist()
-        self.mode = "colecao"
+        self.enter_pen()
         if err:
             self.col.say(f"Não consegui salvar: {err}")
         elif bak_err:
@@ -253,6 +408,15 @@ class HubController:
             elif self.col.confirm_donate:
                 self.col.confirm_donate = False
             else:
+                self.enter_pen()
+        elif m == "cercado":
+            if self.col.editing:
+                self.col.cancel_rename()
+            elif self.col.confirm_donate:
+                self.col.confirm_donate = False
+            elif self.ficha:
+                self.close_ficha()
+            else:
                 self.mode = "menu"
         elif m == "run" and self.rc:
             self.rc.cancel()
@@ -262,14 +426,14 @@ class HubController:
         elif m == "novidades":
             self._finish_news()
         elif m == "adocao":
-            self.adopt = None            # a oferta fica no save; "Continuar" reabre
-            self.mode = "menu"
+            self.adopt = None            # a oferta fica no save; o botao ADOCAO do cercado reabre
+            self.enter_pen()
         elif m == "resultado":
-            self.mode = "colecao"
+            self.enter_pen()
 
     def key_enter(self) -> None:
         m = self.mode
-        if m == "colecao":
+        if m in ("colecao", "cercado"):
             if self.col.editing:
                 self.col.confirm_rename()
         elif m == "run" and self.rc:
@@ -278,14 +442,14 @@ class HubController:
         elif m == "novidades":
             self._finish_news()
         elif m == "resultado":
-            self.mode = "colecao"
+            self.enter_pen()
 
     def text_input(self, text: str) -> None:
-        if self.mode == "colecao":
+        if self.mode in ("colecao", "cercado"):
             self.col.type_text(text)
 
     def backspace(self) -> None:
-        if self.mode == "colecao":
+        if self.mode in ("colecao", "cercado"):
             self.col.backspace()
 
     def scroll(self, n: int) -> None:
@@ -299,7 +463,7 @@ class HubController:
 
     @property
     def editing_text(self) -> bool:
-        return self.mode == "colecao" and self.col is not None and self.col.editing
+        return self.mode in ("colecao", "cercado") and self.col is not None and self.col.editing
 
     # ------------------------------------------------------------ fim da run
     def _check_run_end(self) -> None:
@@ -346,6 +510,12 @@ class HubController:
                 self.toast = None
         if self.col:
             self.col.update(dt)
+        if self.mode == "cercado" and self.pen:
+            self.pen.update(dt)
+            self._pen_sync_clock += dt
+            if self._pen_sync_clock >= 0.5:
+                self._pen_sync_clock = 0.0
+                self.sync_pen()
         if self.adopt:
             self.adopt.update(dt)
         if self.breed:

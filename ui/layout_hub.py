@@ -72,13 +72,13 @@ def detail_panel() -> pygame.Rect:
     return pygame.Rect(662, 56, 286, 312)
 
 
-def rename_button() -> pygame.Rect:
-    d = detail_panel()
+def rename_button(d: pygame.Rect | None = None) -> pygame.Rect:
+    d = d or detail_panel()
     return pygame.Rect(d.x + 8, d.bottom - 40, 128, 32)
 
 
-def donate_button() -> pygame.Rect:
-    d = detail_panel()
+def donate_button(d: pygame.Rect | None = None) -> pygame.Rect:
+    d = d or detail_panel()
     return pygame.Rect(d.x + 142, d.bottom - 40, d.w - 150, 32)
 
 

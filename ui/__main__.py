@@ -26,7 +26,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--jogo", action="store_true", help="abre o jogo: menu, colecao e mini-run")
     ap.add_argument("--save", metavar="CAMINHO", default=None,
                     help="arquivo de save do --jogo (padrão: saves/save.json)")
+    ap.add_argument("--hora", metavar="HH:MM", default=None,
+                    help="forca a hora do cercado (ciclo do dia); padrao: hora do computador")
     args = ap.parse_args(argv)
+    if args.hora:
+        from ui.daycycle import parse_hora
+        try:
+            parse_hora(args.hora)
+        except ValueError as e:
+            ap.error(str(e))
     seed = args.seed if args.seed is not None else Random().randrange(1, 10**6)
     if args.screenshot:
         os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
@@ -36,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
         from ui.scenes_run import RUN_SCENES
         if args.cena in HUB_SCENES:
             from ui.app_hub import screenshot as hub_shot
-            hub_shot(args.screenshot, seed, args.cena)
+            hub_shot(args.screenshot, seed, args.cena, args.hora)
             print(f"salvo: {args.screenshot} (seed {seed}, cena {args.cena})")
             return 0
         if args.cena in RUN_SCENES:
@@ -51,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.jogo:
         from ui.app_hub import run as run_hub
         from ui.hub_controller import DEFAULT_SAVE
-        asyncio.run(run_hub(seed, args.save or DEFAULT_SAVE))
+        asyncio.run(run_hub(seed, args.save or DEFAULT_SAVE, None, args.hora))
         return 0
     if args.run:
         from ui.app_run import run as run_game

@@ -1,0 +1,384 @@
+{
+ "image": "objects.png",
+ "size": [
+  1024,
+  2880
+ ],
+ "objects": {
+  "cama_almofada": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "floor",
+   "anims": {
+    "idle": {
+     "row": 0,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    },
+    "enter": {
+     "row": 1,
+     "frames": 4,
+     "fps": 8,
+     "loop": false
+    },
+    "exit": {
+     "row": 2,
+     "frames": 4,
+     "fps": 8,
+     "loop": false
+    }
+   }
+  },
+  "cama_cesto": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "floor",
+   "anims": {
+    "idle": {
+     "row": 3,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    },
+    "enter": {
+     "row": 4,
+     "frames": 4,
+     "fps": 8,
+     "loop": false
+    },
+    "exit": {
+     "row": 5,
+     "frames": 4,
+     "fps": 8,
+     "loop": false
+    }
+   }
+  },
+  "cama_pedra": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "floor",
+   "anims": {
+    "idle": {
+     "row": 6,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    },
+    "enter": {
+     "row": 7,
+     "frames": 4,
+     "fps": 8,
+     "loop": false
+    },
+    "exit": {
+     "row": 8,
+     "frames": 4,
+     "fps": 8,
+     "loop": false
+    }
+   }
+  },
+  "cama_casal": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "floor",
+   "anims": {
+    "idle": {
+     "row": 9,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    },
+    "enter": {
+     "row": 10,
+     "frames": 4,
+     "fps": 8,
+     "loop": false
+    },
+    "exit": {
+     "row": 11,
+     "frames": 4,
+     "fps": 8,
+     "loop": false
+    }
+   }
+  },
+  "viveiro_cesto": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "floor",
+   "anims": {
+    "idle": {
+     "row": 12,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    },
+    "enter": {
+     "row": 13,
+     "frames": 4,
+     "fps": 8,
+     "loop": false
+    },
+    "exit": {
+     "row": 14,
+     "frames": 4,
+     "fps": 8,
+     "loop": false
+    }
+   }
+  },
+  "banco_arvore": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "sorted",
+   "anims": {
+    "idle": {
+     "row": 15,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    }
+   }
+  },
+  "casinha": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "sorted",
+   "anims": {
+    "idle": {
+     "row": 16,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    }
+   }
+  },
+  "novelo": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "floor",
+   "anims": {
+    "idle": {
+     "row": 17,
+     "frames": 6,
+     "fps": 6,
+     "loop": true
+    },
+    "use": {
+     "row": 18,
+     "frames": 8,
+     "fps": 8,
+     "loop": true
+    }
+   }
+  },
+  "ratinho": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "sorted",
+   "anims": {
+    "idle": {
+     "row": 19,
+     "frames": 6,
+     "fps": 6,
+     "loop": true
+    },
+    "use": {
+     "row": 20,
+     "frames": 8,
+     "fps": 8,
+     "loop": true
+    }
+   }
+  },
+  "arranhador": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "sorted",
+   "anims": {
+    "idle": {
+     "row": 21,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    },
+    "use": {
+     "row": 22,
+     "frames": 6,
+     "fps": 10,
+     "loop": true
+    }
+   }
+  },
+  "bola_filhote": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "sorted",
+   "anims": {
+    "idle": {
+     "row": 23,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    },
+    "use": {
+     "row": 24,
+     "frames": 8,
+     "fps": 10,
+     "loop": true
+    }
+   }
+  },
+  "tunel_filhote": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "sorted",
+   "anims": {
+    "idle": {
+     "row": 25,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    },
+    "use": {
+     "row": 26,
+     "frames": 8,
+     "fps": 8,
+     "loop": true
+    }
+   }
+  },
+  "tigela": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "floor",
+   "anims": {
+    "idle": {
+     "row": 27,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    }
+   }
+  },
+  "tigela_racao": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "floor",
+   "anims": {
+    "idle": {
+     "row": 28,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    }
+   }
+  },
+  "casinha_filhote": {
+   "frame": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    86
+   ],
+   "layer": "sorted",
+   "anims": {
+    "idle": {
+     "row": 29,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    }
+   }
+  }
+ }
+}

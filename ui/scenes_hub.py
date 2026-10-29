@@ -6,20 +6,23 @@ from random import Random
 
 from core import RunAftermath, available_cats, create_adoption, new_game
 from core.save import format_cat_id
-from ui import layout_breed as LB, layout_hub as LH
+from ui import layout_breed as LB, layout_hub as LH, layout_pen as LP
 from ui.breed_controller import NewsController
 from ui.controller import load_game_content
+from ui.daycycle import fixed_clock
 from ui.hub_controller import HubController
 from ui.render import UIState
 
 HUB_SCENES = ("menu", "menu_confirmar", "menu_corrompido", "colecao", "colecao_deck",
               "renomear", "resultado", "adocao", "adocao_vazia", "doar_confirmar")
 BREED_SCENES = ("criatorio", "criatorio_casal", "criatorio_recusado", "novidades")
-ALL_SCENES = HUB_SCENES + BREED_SCENES
+PEN_SCENES = ("criatorio_hub", "criatorio_hub_ficha", "criatorio_hub_adocao")
+ALL_SCENES = HUB_SCENES + BREED_SCENES + PEN_SCENES
+PEN_SIM_SECONDS = 25.0          # tempo simulado antes do screenshot (deterministico por seed)
 
 
-def _breed_scene(hub: HubController, ui: UIState, name: str, seed: int) -> None:
-    """Save com 18 adultos (sobra para o breed), um casal em breed, um quase pronto e filhotes."""
+def _big_save(hub: HubController) -> tuple[list, list]:
+    """Save com 18 adultos (sobra para o breed), dois casais em breed e 2 filhotes (20 gatos...)."""
     content, save = hub.content, hub.save
     base = list(save.cats)
     for k in range(6):
@@ -34,11 +37,18 @@ def _breed_scene(hub: HubController, ui: UIState, name: str, seed: int) -> None:
     save.breeding = [{"male": males[1].id, "female": females[1].id, "runs_left": 2},
                      {"male": males[2].id, "female": females[2].id, "runs_left": 1}]
     save.deck = []
-    for i in range(2):
+    for i in range(4):
         k = replace(base[i], id=format_cat_id(save.next_cat_id), name=None, stage="kitten",
-                    runs_as_kitten=i, iv_atk=5 - i, iv_hp=4)
+                    runs_as_kitten=i % 3, iv_atk=5 - i, iv_hp=4)
         save.next_cat_id += 1
         save.cats.append(k)
+    return males, females
+
+
+def _breed_scene(hub: HubController, ui: UIState, name: str, seed: int) -> None:
+    content, save = hub.content, hub.save
+    males, females = _big_save(hub)
+    base = list(save.cats)
     if name == "novidades":
         born = [replace(base[0], id=format_cat_id(save.next_cat_id + i), name=None, stage="kitten",
                         sex="MF"[i % 2], iv_atk=a, iv_hp=h)
@@ -67,11 +77,34 @@ def _breed_scene(hub: HubController, ui: UIState, name: str, seed: int) -> None:
         ui.mouse = LB.row_rect("M", 1).center
 
 
-def make(seed: int, name: str) -> tuple[HubController, UIState]:
+def _pen_scene(hub: HubController, ui: UIState, name: str, seed: int) -> None:
+    """Cercado cheio (16 gatos em cena, de 20 na colecao), tempo simulado por seed."""
+    _big_save(hub)
+    hub.col.refresh_deck()
+    hub.col.complete()
+    hub.col.toast = None
+    hub.save.cats[3].name = "Mingau"
+    hub.save.coins = 12
+    if name == "criatorio_hub_adocao":
+        create_adoption(hub.content, hub.save, Random(seed), "vitoria", 6)
+    hub.enter_pen()
+    hub.pen.advance(PEN_SIM_SECONDS)
+    ui.mouse = (-100, -100)
+    if name == "criatorio_hub_ficha":
+        c = hub.pen.cats[0]
+        hub.open_ficha(c.cat_id)
+        hub.pen.advance(0.3)
+        ui.mouse = LP.ficha_close(hub.ficha_rect()).center
+    elif name == "criatorio_hub_adocao":
+        ui.mouse = LP.button_rect("adocao").center
+
+
+def make(seed: int, name: str, hora: str | None = None) -> tuple[HubController, UIState]:
+    """`hora` ("HH:MM") fixa o relogio do cercado; padrao 12:00 (deterministico)."""
     if name not in ALL_SCENES:
         raise SystemExit(f"cena desconhecida: {name} (use: {', '.join(ALL_SCENES)})")
     content = load_game_content()
-    hub = HubController(content, None, seed, ai_delay=0.0)
+    hub = HubController(content, None, seed, ai_delay=0.0, clock=fixed_clock(hora or "12:00"))
     ui = UIState(t=0.2)
     if name == "menu_corrompido":
         hub.load_error = "JSON invalido: Expecting value: line 1 column 1 (char 0)"
@@ -79,6 +112,9 @@ def make(seed: int, name: str) -> tuple[HubController, UIState]:
         return hub, ui
     hub.adopt_save(new_game(content, Random(seed)))
     hub.has_file = True
+    if name in PEN_SCENES:
+        _pen_scene(hub, ui, name, seed)
+        return hub, ui
     if name in BREED_SCENES:
         _breed_scene(hub, ui, name, seed)
         return hub, ui

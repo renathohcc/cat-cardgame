@@ -143,7 +143,7 @@ def _side_panel(surf: pygame.Surface, bc: BreedController, ui: UIState) -> None:
 
 
 def draw_breed(surf: pygame.Surface, bc: BreedController, ui: UIState) -> None:
-    Wd.title(surf, "CRIATÓRIO", 22, 14, C["text"], 2)
+    Wd.title(surf, "BREED", 22, 14, C["text"], 2)
     font.draw(surf, font.fit(f"Adultos livres {bc.free_adults()} (mín. {bc.cfg['min_adults_after_breed']} fora do casal)", 560),
               W - 24, 22, C["dim"], 1, "right")
     for side in ("M", "F"):
