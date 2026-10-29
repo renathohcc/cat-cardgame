@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pygame
 
-from ui import font, skin, sprites
+from ui import audio, font, skin, sprites
 from ui.render import mix_c, outlined, text_fit, tint
 from ui.theme import BREED_COLOR, C, DEFAULT_BREED_COLOR, H, KEYWORD_COLOR, W
 
@@ -271,3 +271,37 @@ def scrollbar(surf: pygame.Surface, track: pygame.Rect, total: int, visible: int
         ty = track.y + (track.h - th) * pos // max(1, max_pos)
         pygame.draw.rect(surf, EDGE, (track.x, ty, track.w, th), border_radius=3)
 
+
+
+# ------------------------------------------------------------------ audio
+def volume_bar(surf: pygame.Surface, r: pygame.Rect, value: float, on: bool = True) -> None:
+    """Barra de volume (0..1) no estilo dos widgets nativos."""
+    pygame.draw.rect(surf, C["slot"], r, border_radius=4)
+    fill = pygame.Rect(r.x + 2, r.y + 2, int((r.w - 4) * max(0.0, min(1.0, value))), r.h - 4)
+    if fill.w > 0:
+        pygame.draw.rect(surf, C["good"] if on else C["dim"], fill, border_radius=3)
+    pygame.draw.rect(surf, EDGE, r, 2, border_radius=4)
+
+
+def volume_panel(surf: pygame.Surface, mouse) -> None:
+    """Controles de volume do menu: Musica e Efeitos (-/+ em passos de 10%) e botao de mudo."""
+    from ui import layout_hub as LH
+    mgr = audio.manager()
+    panel(surf, LH.volume_panel(), alpha=170)
+    for i, which in enumerate(LH.VOL_ROWS):
+        y = LH.vol_row_y(i)
+        v = mgr.volume_of(which)
+        font.draw(surf, which.upper(), LH.volume_panel().x + 12, y + (26 - font.CAP_H) // 2, C["text"], 1)
+        button(surf, LH.vol_minus(i), "-", mouse, v > 0, scale=2)
+        volume_bar(surf, LH.vol_bar(i), v, not mgr.muted)
+        button(surf, LH.vol_plus(i), "+", mouse, v < 1, scale=2)
+        font.draw(surf, f"{round(v * 100)}%", LH.vol_plus(i).right + 10, y + (26 - font.CAP_H) // 2,
+                  C["dim"] if mgr.muted else C["text"], 1)
+    r = LH.mute_button()
+    button(surf, r, "MUDO (M)" if mgr.muted else "SOM (M)", mouse, True, base=(150, 60, 60) if mgr.muted else None)
+
+
+def mute_badge(surf: pygame.Surface) -> None:
+    """Aviso discreto 'MUDO (M)' no canto quando o som esta desligado."""
+    if audio.manager().muted:
+        font.draw(surf, "MUDO (M)", 10, H - font.CAP_H - 8, C["warn"], 1)

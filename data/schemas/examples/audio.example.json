@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "volumes": {
+    "musica": 0.7,
+    "efeitos": 0.8
+  },
+  "sfx": {
+    "ui_click": {
+      "files": [
+        "sfx/ui_click.ogg",
+        "sfx/ui_click_2.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 40
+    }
+  },
+  "music": {
+    "menu_dia": {
+      "file": "music/menu_dia.ogg",
+      "volume": 1.0,
+      "loop": true
+    }
+  },
+  "contexts": {
+    "menu": "menu_dia"
+  }
+}

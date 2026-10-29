@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pygame
 
-from ui import layout as L, scenes, scenes_novas
+from ui import audio, layout as L, scenes, scenes_novas, widgets as Wd
 from ui.controller import Controller, load_game_content
 from ui.render import UIState, draw_frame
 from ui.theme import H, W
@@ -46,6 +46,8 @@ def screenshot(path: str, seed: int, scene: str, enemy: str | None = None) -> No
 
 async def run(seed: int, enemy: str | None = None) -> None:
     pygame.init()
+    audio.setup()
+    hover = audio.HoverSound()
     disp = Display("duelo de teste")
     clock = pygame.time.Clock()
     ctrl = make_controller(seed, enemy)
@@ -63,9 +65,12 @@ async def run(seed: int, enemy: str | None = None) -> None:
     while running:
         dt = clock.tick(60) / 1000.0
         for ev in pygame.event.get():
+            audio.on_event(ev)
             if ev.type == pygame.QUIT:
                 running = False
             elif disp.handle_key(ev):
+                pass
+            elif ev.type == pygame.KEYDOWN and audio.handle_key(ev.key):
                 pass
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
@@ -90,6 +95,7 @@ async def run(seed: int, enemy: str | None = None) -> None:
             elif ev.type == pygame.MOUSEMOTION:
                 pos = internal(ev.pos)
                 ui.mouse = pos
+                hover.update(hit(pos))
                 if press and ui.drag is None and press[0] is not None:
                     if math.dist(pos, press[1]) > DRAG_THRESHOLD and ctrl.drag_start(press[0]):
                         ui.drag = (press[0], pos)
@@ -107,8 +113,11 @@ async def run(seed: int, enemy: str | None = None) -> None:
                 press = None
         ctrl.speed = 6.0 if pygame.key.get_pressed()[pygame.K_SPACE] else 1.0
         ctrl.update(dt)
+        audio.music("duelo_chefe" if ctrl.enemy and ctrl.enemy.get("tipo") == "chefe" else "duelo")
+        audio.update(dt)
         ui.t += dt
         draw_frame(canvas, ctrl, ui)
+        Wd.mute_badge(canvas)
         disp.render(canvas)
         pygame.display.flip()
         await asyncio.sleep(0)

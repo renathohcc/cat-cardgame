@@ -20,7 +20,7 @@ import pygame
 from core import Run, new_run
 from core.duel import card_from_effect, card_from_special
 from core.types import Card, Content, IllegalAction
-from ui import layout as L, layout_run as LR
+from ui import audio, layout as L, layout_run as LR
 from ui.controller import Controller, Toast
 
 SCREENS = ("map", "duel", "draft", "finished")
@@ -62,6 +62,8 @@ class RunController:
 
     def say(self, text: str, kind: str = "error", ttl: float = 2.5) -> None:
         self.toast = Toast(text, kind, ttl)
+        if kind == "error":
+            audio.sfx("ui_denied")
 
     # ------------------------------------------------------------ consultas (apresentacao)
     def enemy_of(self, node: dict) -> dict | None:
@@ -179,6 +181,15 @@ class RunController:
             out.append((txt, self.node_state(li, n)))
         return out
 
+    def audio_context(self) -> str:
+        """Contexto de musica (chave de data/audio.json) da tela atual da run."""
+        s = self.screen
+        if s == "duel":
+            return "duelo_chefe" if self.run.node and self.run.node.get("tipo") == "chefe" else "duelo"
+        if s == "finished":
+            return "fim_vitoria" if self.run.result == "vitoria" else "fim_derrota"
+        return "mapa"
+
     # ------------------------------------------------------------ entrada
     def hit(self, pos: tuple[int, int]) -> tuple | None:
         if self.screen == "duel" and self.duel_ctrl is not None:
@@ -200,9 +211,11 @@ class RunController:
         if self.quit_confirm:
             if elem == ("quit_yes",):
                 self.quit_confirm = False
+                audio.sfx("ui_click")
                 self.abandon()
             elif elem == ("quit_no",):
                 self.quit_confirm = False
+                audio.sfx("ui_back")
             return
         if elem is None:
             if self.screen == "duel" and self.duel_ctrl:
@@ -216,15 +229,19 @@ class RunController:
                 self.choose(elem[1])
             elif kind == "abandon" and self.screen == "map":
                 self.quit_confirm = True
+                audio.sfx("ui_open_modal")
             elif kind == "draft_card" and self.screen == "draft":
                 self.click_draft(elem[1])
             elif kind == "draft_pick" and self.screen == "draft":
                 self.pick(elem[1])
             elif kind == "continue" and self.screen == "duel":
+                audio.sfx("ui_click")
                 self.continue_duel()
             elif kind == "new_run" and self.screen == "finished":
+                audio.sfx("ui_click")
                 self.again()
             elif kind == "quit" and self.screen == "finished":
+                audio.sfx("ui_back")
                 self.wants_quit = True
             elif self.screen == "duel" and self.duel_ctrl:
                 self.duel_ctrl.click(elem)
@@ -235,12 +252,14 @@ class RunController:
         """ESC / botao direito: cancela a etapa atual; sem nada a cancelar pede para abandonar."""
         if self.quit_confirm:
             self.quit_confirm = False
+            audio.sfx("ui_back")
             return
         s = self.screen
         if s == "draft":
             self.draft_sel = None
         elif s == "map":
             self.quit_confirm = True
+            audio.sfx("ui_open_modal")
         elif s == "duel" and self.duel_ctrl:
             c = self.duel_ctrl
             if c.phase in ("over", "dice"):
@@ -249,6 +268,7 @@ class RunController:
                 c.cancel()
             else:
                 self.quit_confirm = True
+                audio.sfx("ui_open_modal")
         elif s == "finished":
             self.wants_quit = True
 
@@ -270,6 +290,7 @@ class RunController:
         self.run.choose_node(node_id)
         self.visited.append(node_id)
         node = self.run.node
+        audio.sfx("rest" if node and node["tipo"] == "descanso" else "node_select")
         if node and node["tipo"] == "descanso":
             self.draft_from = "descanso"
             self.draft_sel = None
@@ -311,9 +332,11 @@ class RunController:
             self.pick(i)
         else:
             self.draft_sel = i
+            audio.sfx("ui_click")
 
     def pick(self, i: int) -> None:
         self.last_pick = self.run.pick_draft(i)
+        audio.sfx("draft_pick")
         self.draft_sel = None
         if self.run.status == "finished":
             self._on_finished()

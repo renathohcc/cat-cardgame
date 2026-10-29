@@ -56,3 +56,17 @@ Consolida as antigas secoes T9.0, T9.2, T9.4, T9.6, T9.7, T9.8, T9.9 e T9.11. Os
 - Termos: https://pixellab.ai/termsofservice (nenhum termo e transcrito ou interpretado aqui). Creditos: Pixellab, plano Tier 1.
 - **PENDENTE:** o Renatho deve confirmar que o plano permite **uso comercial** da arte gerada (revisao da fase 7, item 12) e registrar o resultado aqui.
 - **PENDENTE:** declarar no formulario de **disclosure de IA da Steam** que o cercado (fundos, objetos e gatos de pen) contem arte pre-gerada por IA em desenvolvimento (sem geracao durante o jogo).
+
+## Audio (T10.2, 2026-10-29)
+- `assets/audio/sfx/*.ogg` e `assets/audio/music/*.ogg`: derivados de arquivos **CC0 1.0 (dominio publico)** baixados do OpenGameArt (Kenney Interface Sounds, UI Audio e RPG Audio; rubberduck "100 CC0 SFX"; Someoneman "Cure Magic"; JaggedStone "Magic Spell SFX"; Kerzoven "Cat Purr & Meow"; IgnasD "Meow"; AntumDeluge "Kitten Mew"; Joth, isaiah658, LordZintick, iamoneabe, Pro Sensory, cynicmusic, Kosmo The Cat e Fupi para musica/jingles). Nenhuma atribuicao e obrigatoria; a tabela completa (arquivo final, fonte/URL, autor, licenca, alteracoes) esta em `assets/audio/CREDITS.md`.
+- Brutos em `assets/audio/_src/` (nao sao distribuidos no build). Conversao por `assets/tools/build_audio.py` (dev: numpy, scipy, soundfile, pyloudnorm; nao entram no requirements.txt). Sem IA generativa neste audio.
+- **PENDENTE (Renatho):** conferir a licenca na pagina de cada item antes do lancamento; as licencas foram lidas nas paginas do OpenGameArt em 2026-10-29, e o OpenGameArt nao verifica a autoria dos uploads.
+
+## Audio - candidatos (T10.6, ainda nao em producao)
+- `assets/audio/_candidatos/` guarda candidatos de substituicao (mapa_run, miados, ronronar, pet, cat_death), todos de fontes CC0 / dominio publico (BigSoundBank/Joseph Sardin, OpenGameArt: Traceletz, Technopeasant, EZduzziteh, MintoDog, johnclark, Holizna) ou sintetizados por script. Tabela em `assets/audio/_candidatos/CREDITS.md`; so entram em `CREDITS.md`/aqui quando aplicados por `assets/tools/apply_audio_candidates.py`.
+- BigSoundBank declara "CC0 (public domain)" em cada pagina; o pack "Baby Animals" do OpenGameArt e uma compilacao cujos sons individuais (freesound CC0) nao foram verificados um a um. Conferir antes do lancamento.
+
+## Audio (T10.6, substituicoes)
+- Substituidos por candidatos (adopt, cat_death, cat_death_2, kitten_born, kitten_mew, mapa_run, meow_1, meow_2, meow_3, meow_4, pet, pet_2, purr); todos CC0 / dominio publico ou sintetizados por script (sem amostras externas). Nenhuma atribuicao obrigatoria.
+- Fontes: BigSoundBank - Cat Purr (s0436); BigSoundBank - Little Meow of a Cat #1 (s0494); BigSoundBank - Little meow of a cat #3 (s1473); BigSoundBank - Meow cat #1 (s1889); BigSoundBank - Small mewing of a cat (s0098); Cozy Puzzle In-Game 3 (OpenGameArt); Kenney - Interface Sounds (glass_003); Sintetizado por script (assets/tools/build_audio_candidates.py), sem amostras externas. Autores: Joseph Sardin; Kenney; MintoDog; projeto Chaoscats.
+- Detalhe por arquivo em `assets/audio/CREDITS.md`; licencas lidas nas paginas das fontes em 2026-10-29. Candidatos nao usados continuam em `assets/audio/_candidatos/` (nao entram no build).

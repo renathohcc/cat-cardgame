@@ -43,6 +43,7 @@ def draw_menu(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
         hot_ok = enabled and not hub.confirm_new
         button(surf, r, label, ui.mouse if hot_ok else (-100, -100), enabled, scale=2,
                base=DANGER if key == "quit" else None)
+    Wd.volume_panel(surf, ui.mouse if not hub.confirm_new else (-100, -100))
     info = LH.menu_info_rect()
     if hub.load_error:
         Wd.panel(surf, info, C["bad"])

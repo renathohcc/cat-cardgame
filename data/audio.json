@@ -1,0 +1,325 @@
+{
+  "version": 1,
+  "volumes": {
+    "musica": 0.7,
+    "efeitos": 0.8
+  },
+  "sfx": {
+    "ui_click": {
+      "files": [
+        "sfx/ui_click.ogg",
+        "sfx/ui_click_2.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 40
+    },
+    "ui_hover": {
+      "files": [
+        "sfx/ui_hover.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 80
+    },
+    "ui_back": {
+      "files": [
+        "sfx/ui_back.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "ui_denied": {
+      "files": [
+        "sfx/ui_denied.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 150
+    },
+    "coin": {
+      "files": [
+        "sfx/coin.ogg",
+        "sfx/coin_2.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 80
+    },
+    "ui_open_modal": {
+      "files": [
+        "sfx/ui_open_modal.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "card_draw": {
+      "files": [
+        "sfx/card_draw.ogg",
+        "sfx/card_draw_2.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 80
+    },
+    "card_play_cat": {
+      "files": [
+        "sfx/card_play_cat.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "card_play_effect": {
+      "files": [
+        "sfx/card_play_effect.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "card_play_spirit": {
+      "files": [
+        "sfx/card_play_spirit.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "attack_swing": {
+      "files": [
+        "sfx/attack_swing.ogg",
+        "sfx/attack_swing_2.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "attack_hit": {
+      "files": [
+        "sfx/attack_hit.ogg",
+        "sfx/attack_hit_2.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 60
+    },
+    "leader_hit": {
+      "files": [
+        "sfx/leader_hit.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 60
+    },
+    "cat_death": {
+      "files": [
+        "sfx/cat_death.ogg",
+        "sfx/cat_death_2.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 100
+    },
+    "buff": {
+      "files": [
+        "sfx/buff.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 100
+    },
+    "heal": {
+      "files": [
+        "sfx/heal.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 100
+    },
+    "shield_protected": {
+      "files": [
+        "sfx/shield_protected.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 100
+    },
+    "turn_start_player": {
+      "files": [
+        "sfx/turn_start_player.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "turn_start_enemy": {
+      "files": [
+        "sfx/turn_start_enemy.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "energy_up": {
+      "files": [
+        "sfx/energy_up.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 150
+    },
+    "duel_victory": {
+      "files": [
+        "sfx/duel_victory.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "duel_defeat": {
+      "files": [
+        "sfx/duel_defeat.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "node_select": {
+      "files": [
+        "sfx/node_select.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "draft_pick": {
+      "files": [
+        "sfx/draft_pick.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "rest": {
+      "files": [
+        "sfx/rest.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "adopt": {
+      "files": [
+        "sfx/adopt.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "breed_start": {
+      "files": [
+        "sfx/breed_start.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "kitten_born": {
+      "files": [
+        "sfx/kitten_born.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "level_up": {
+      "files": [
+        "sfx/level_up.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 0
+    },
+    "meow_1": {
+      "files": [
+        "sfx/meow_1.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 600
+    },
+    "meow_2": {
+      "files": [
+        "sfx/meow_2.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 600
+    },
+    "meow_3": {
+      "files": [
+        "sfx/meow_3.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 600
+    },
+    "meow_4": {
+      "files": [
+        "sfx/meow_4.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 600
+    },
+    "kitten_mew": {
+      "files": [
+        "sfx/kitten_mew.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 600
+    },
+    "purr": {
+      "files": [
+        "sfx/purr.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 2000
+    },
+    "bed_settle": {
+      "files": [
+        "sfx/bed_settle.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 800
+    },
+    "pet": {
+      "files": [
+        "sfx/pet.ogg",
+        "sfx/pet_2.ogg"
+      ],
+      "volume": 1.0,
+      "cooldown_ms": 300
+    }
+  },
+  "music": {
+    "menu_dia": {
+      "file": "music/menu_dia.ogg",
+      "volume": 1.0,
+      "loop": true
+    },
+    "menu_noite": {
+      "file": "music/menu_noite.ogg",
+      "volume": 1.0,
+      "loop": true
+    },
+    "mapa_run": {
+      "file": "music/mapa_run.ogg",
+      "volume": 1.0,
+      "loop": true
+    },
+    "duelo": {
+      "file": "music/duelo.ogg",
+      "volume": 1.0,
+      "loop": true
+    },
+    "duelo_chefe": {
+      "file": "music/duelo_chefe.ogg",
+      "volume": 1.0,
+      "loop": true
+    },
+    "vitoria": {
+      "file": "music/vitoria.ogg",
+      "volume": 1.0,
+      "loop": false
+    },
+    "derrota": {
+      "file": "music/derrota.ogg",
+      "volume": 1.0,
+      "loop": false
+    }
+  },
+  "contexts": {
+    "menu": "menu_dia",
+    "criatorio_dia": "menu_dia",
+    "criatorio_noite": "menu_noite",
+    "mapa": "mapa_run",
+    "duelo": "duelo",
+    "duelo_chefe": "duelo_chefe",
+    "fim_vitoria": "vitoria",
+    "fim_derrota": "derrota",
+    "colecao": "menu_dia",
+    "breed": "menu_noite",
+    "adocao": "menu_dia"
+  }
+}

@@ -6,10 +6,11 @@ import math
 
 import pygame
 
-from ui import layout as L, scenes_run
+from ui import audio, layout as L, scenes_run, widgets as Wd
 from ui.app import DRAG_THRESHOLD
 from ui.display import Display
 from ui.controller import load_game_content
+from ui.hub_controller import DEFAULT_SAVE
 from ui.render import UIState
 from ui.render_run import draw_run_frame
 from ui.run_controller import RunController
@@ -32,6 +33,8 @@ def screenshot(path: str, seed: int, scene: str) -> None:
 
 async def run(seed: int, scene: str | None = None) -> None:
     pygame.init()
+    audio.setup()
+    hover = audio.HoverSound()
     disp = Display("mini-run")
     clock = pygame.time.Clock()
     ui = UIState()
@@ -54,9 +57,12 @@ async def run(seed: int, scene: str | None = None) -> None:
         dt = clock.tick(60) / 1000.0
         duel = rc.duel_ctrl if rc.screen == "duel" and not rc.quit_confirm else None
         for ev in pygame.event.get():
+            audio.on_event(ev)
             if ev.type == pygame.QUIT:
                 running = False
             elif disp.handle_key(ev):
+                pass
+            elif ev.type == pygame.KEYDOWN and audio.handle_key(ev.key):
                 pass
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
@@ -82,6 +88,7 @@ async def run(seed: int, scene: str | None = None) -> None:
             elif ev.type == pygame.MOUSEMOTION:
                 pos = internal(ev.pos)
                 ui.mouse = pos
+                hover.update(rc.hit(pos))
                 if duel is not None and press and ui.drag is None and press[0] is not None:
                     if math.dist(pos, press[1]) > DRAG_THRESHOLD and duel.drag_start(press[0]):
                         ui.drag = (press[0], pos)
@@ -102,8 +109,11 @@ async def run(seed: int, scene: str | None = None) -> None:
         if rc.duel_ctrl is not None:
             rc.duel_ctrl.speed = 6.0 if pygame.key.get_pressed()[pygame.K_SPACE] else 1.0
         rc.update(dt)
+        audio.music(rc.audio_context())
+        audio.update(dt)
         ui.t += dt
         draw_run_frame(canvas, rc, ui)
+        Wd.mute_badge(canvas)
         disp.render(canvas)
         pygame.display.flip()
         await asyncio.sleep(0)

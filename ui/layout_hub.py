@@ -17,6 +17,47 @@ def menu_info_rect() -> pygame.Rect:
     return pygame.Rect(W // 2 - 300, 444, 600, 64)
 
 
+# volume (menu): duas linhas (-/+ e barra) mais o botao de mudo
+VOL_ROWS = ("musica", "efeitos")
+
+
+def volume_panel() -> pygame.Rect:
+    return pygame.Rect(W // 2 - 240, 168, 480, 72)
+
+
+def vol_row_y(i: int) -> int:
+    return volume_panel().y + 8 + i * 30
+
+
+def vol_minus(i: int) -> pygame.Rect:
+    return pygame.Rect(volume_panel().x + 104, vol_row_y(i), 26, 26)
+
+
+def vol_bar(i: int) -> pygame.Rect:
+    return pygame.Rect(volume_panel().x + 136, vol_row_y(i), 140, 26)
+
+
+def vol_plus(i: int) -> pygame.Rect:
+    return pygame.Rect(volume_panel().x + 282, vol_row_y(i), 26, 26)
+
+
+def mute_button() -> pygame.Rect:
+    p = volume_panel()
+    return pygame.Rect(p.x + 372, p.y + 8, p.w - 382, 56)
+
+
+def vol_hit(pos: tuple[int, int]) -> tuple | None:
+    for i, which in enumerate(VOL_ROWS):
+        if vol_minus(i).collidepoint(pos):
+            return ("vol", which, -1)
+        if vol_plus(i).collidepoint(pos):
+            return ("vol", which, 1)
+        bar = vol_bar(i)
+        if bar.collidepoint(pos):
+            return ("vol_set", which, round(10 * (pos[0] - bar.x) / (bar.w - 1)) / 10)
+    return ("mute",) if mute_button().collidepoint(pos) else None
+
+
 def confirm_panel() -> pygame.Rect:
     return pygame.Rect(W // 2 - 270, 160, 540, 210)
 
@@ -172,6 +213,7 @@ def hit_test(pos: tuple[int, int], mode: str, *, rows: list[str] | None = None,
         for i, item in enumerate(MENU_ITEMS):
             if menu_button(i).collidepoint(pos):
                 return ("menu", item)
+        return vol_hit(pos)
     elif mode == "colecao":
         if rename:
             for name, r in rename_buttons().items():

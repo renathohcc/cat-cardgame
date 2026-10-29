@@ -7,3 +7,5 @@ build/out/
 saves/
 *.log
 .env
+assets/audio/_src/
+assets/audio/_candidatos/

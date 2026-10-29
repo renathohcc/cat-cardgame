@@ -21,7 +21,7 @@ from core import (SaveData, advance_after_run, create_adoption, has_pending_adop
                   read_save, write_save)
 from core import Content, breed_cfg
 from core.types import IllegalAction
-from ui import layout_hub as LH
+from ui import audio, layout_hub as LH
 from ui.adoption_controller import AdoptionController
 from ui.breed_controller import BreedController, NewsController
 from ui.collection_controller import CollectionController
@@ -64,6 +64,7 @@ class HubController:
         self.ficha: str | None = None             # gato com a ficha aberta no cercado
         self.breed_from = "cercado"               # para onde o BREED volta
         self._pen_sync_clock = 0.0
+        self.end_jingle = False                   # run acabou: toca o jingle ate o 1o clique
         self.reload()
 
     # ------------------------------------------------------------ save
@@ -123,6 +124,8 @@ class HubController:
 
     def say(self, text: str, kind: str = "error", ttl: float = 2.5) -> None:
         self.toast = Toast(text, kind, ttl)
+        if kind == "error":
+            audio.sfx("ui_denied")
 
     # ------------------------------------------------------------ cercado
     def pen_max(self) -> int:
@@ -140,7 +143,7 @@ class HubController:
             self.col = CollectionController(self.content, self.save, self.persist)
         if self.pen is None:
             self.pen = PenController(Random(self.seed * 31 + 7), load_geometry(), self.pen_max(), self.clock,
-                                 self.pen_zone_caps())
+                                 self.pen_zone_caps(), audio_rng=Random(self.seed * 53 + 11))
         self.ficha = None
         self.pen.hold(None)
         self.mode = "cercado"
@@ -280,7 +283,75 @@ class HubController:
             self.close_ficha()
             self.mode = "menu"
 
+    # ------------------------------------------------------------ audio
+    BACK_KINDS = ("back", "result_back", "ficha_close", "confirm_no", "donate_no", "rename_cancel")
+    QUIET_KINDS = ("none", "pen_obj", "row", "scroll")
+
+    def _snap(self) -> tuple:
+        s = self.save
+        return (audio.manager().total_requests, s.coins if s else 0, len(s.cats) if s else 0,
+                len(s.breeding) if s else 0, self.mode, self._modal_flags(), id(s))
+
+    def _modal_flags(self) -> tuple:
+        col = self.col
+        return (self.confirm_new, bool(col and col.editing), bool(col and col.confirm_donate),
+                self.ficha is not None)
+
+    def _sound_after(self, elem: tuple | None, before: tuple, key: bool = False) -> None:
+        """Som de uma acao de meta, derivado do que mudou (nunca decide regra)."""
+        mgr, s = audio.manager(), self.save
+        if mgr.total_requests != before[0]:
+            return                                          # ja tocou algo (ex.: ui_denied, pet)
+        same = s is not None and id(s) == before[6]
+        if same and s.coins > before[1]:
+            audio.sfx("coin")
+        elif same and len(s.cats) > before[2]:
+            audio.sfx("adopt")
+        elif same and len(s.breeding) > before[3]:
+            audio.sfx("breed_start")
+        else:
+            flags = self._modal_flags()
+            opened = any(n and not o for n, o in zip(flags[:3], before[5][:3]))
+            closed = any(o and not n for n, o in zip(flags, before[5]))
+            if opened:
+                audio.sfx("ui_open_modal")
+            elif (elem and elem[0] in self.BACK_KINDS) or (key and (closed or self.mode != before[4])):
+                audio.sfx("ui_back")
+            elif elem and not key and elem[0] not in self.QUIET_KINDS:
+                audio.sfx("ui_click")
+
+    def _drain_pen_sounds(self) -> None:
+        if not self.pen:
+            return
+        sounds, self.pen.sounds = self.pen.sounds, []
+        if self.mode == "cercado":
+            for cue in sounds:
+                audio.sfx(cue)
+
+    def audio_context(self) -> str:
+        """Contexto de musica (chave de data/audio.json) da tela atual."""
+        m = self.mode
+        if m == "run" and self.rc:
+            return self.rc.audio_context()
+        if self.end_jingle and m in ("novidades", "adocao", "resultado"):
+            return "fim_vitoria" if self.result_win else "fim_derrota"
+        if m == "cercado":
+            night = self.pen is not None and self.pen.day.dominant in ("entardecer", "noite")
+            return "criatorio_noite" if night else "criatorio_dia"
+        return {"colecao": "colecao", "criatorio": "breed", "novidades": "breed", "adocao": "adocao",
+                "resultado": "fim_vitoria" if self.result_win else "fim_derrota"}.get(m, "menu")
+
     def click(self, elem: tuple | None) -> None:
+        if self.mode == "run":
+            self._click(elem)
+            return
+        before = self._snap()
+        self.end_jingle = False
+        self._click(elem)
+        self._drain_pen_sounds()
+        self._sound_after(elem, before)
+
+    def _click(self, elem: tuple | None) -> None:
         m = self.mode
         if m == "run" and self.rc:
             self.rc.click(elem)
@@ -317,6 +388,16 @@ class HubController:
                 self.start_new_game()
             elif elem == ("confirm_no",):
                 self.confirm_new = False
+            return
+        if elem and elem[0] in ("vol", "vol_set", "mute"):
+            mgr = audio.manager()
+            if elem[0] == "mute":
+                mgr.toggle_mute()
+            elif elem[0] == "vol":
+                mgr.adjust_volume(elem[1], elem[2])
+            else:
+                mgr.set_volume(elem[1], elem[2])
+            audio.sfx("ui_click")
             return
         if not elem or elem[0] != "menu":
             return
@@ -399,6 +480,14 @@ class HubController:
         self.mode = "run"
 
     def key_escape(self) -> None:
+        if self.mode == "run":
+            self._key_escape()
+            return
+        before = self._snap()
+        self._key_escape()
+        self._sound_after(None, before, key=True)
+
+    def _key_escape(self) -> None:
         m = self.mode
         if m == "menu":
             self.confirm_new = False
@@ -493,6 +582,11 @@ class HubController:
         err = self.persist()            # UM unico write_save
         if err:
             self.say(f"Não consegui salvar: {err}")
+        self.end_jingle = True
+        if aftermath.born:
+            audio.sfx("kitten_born")
+        elif aftermath.grown:
+            audio.sfx("level_up")
         if aftermath.born or aftermath.grown:
             self.news = NewsController(self.content, self.save, aftermath)
             self.mode = "novidades"
@@ -512,6 +606,7 @@ class HubController:
             self.col.update(dt)
         if self.mode == "cercado" and self.pen:
             self.pen.update(dt)
+            self._drain_pen_sounds()
             self._pen_sync_clock += dt
             if self._pen_sync_clock >= 0.5:
                 self._pen_sync_clock = 0.0

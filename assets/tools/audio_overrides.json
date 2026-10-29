@@ -1,0 +1,106 @@
+{
+ "mapa_run": {
+  "candidato": "cozy_guitar",
+  "fonte": "Cozy Puzzle In-Game 3 (OpenGameArt)",
+  "autor": "MintoDog",
+  "url": "https://opengameart.org/content/cozy-puzzle-in-game-3",
+  "licenca": "CC0 1.0",
+  "sintetizado": false
+ },
+ "meow_1": {
+  "candidato": "bsb_pequeno1",
+  "fonte": "BigSoundBank - Little Meow of a Cat #1 (s0494)",
+  "autor": "Joseph Sardin",
+  "url": "https://bigsoundbank.com/little-meow-of-a-cat-s0494.html",
+  "licenca": "CC0 (pagina: 'CC0 (public domain)')",
+  "sintetizado": false
+ },
+ "meow_2": {
+  "candidato": "bsb_mewing_b",
+  "fonte": "BigSoundBank - Small mewing of a cat (s0098)",
+  "autor": "Joseph Sardin",
+  "url": "https://bigsoundbank.com/small-mewing-of-a-cat-s0098.html",
+  "licenca": "CC0 (pagina: 'CC0 (public domain)')",
+  "sintetizado": false
+ },
+ "meow_3": {
+  "candidato": "bsb_cat1_longo",
+  "fonte": "BigSoundBank - Meow cat #1 (s1889)",
+  "autor": "Joseph Sardin",
+  "url": "https://bigsoundbank.com/meow-cat-1-s1889.html",
+  "licenca": "CC0 (pagina: 'CC0 (public domain)')",
+  "sintetizado": false
+ },
+ "meow_4": {
+  "candidato": "bsb_mewing_d",
+  "fonte": "BigSoundBank - Small mewing of a cat (s0098)",
+  "autor": "Joseph Sardin",
+  "url": "https://bigsoundbank.com/small-mewing-of-a-cat-s0098.html",
+  "licenca": "CC0 (pagina: 'CC0 (public domain)')",
+  "sintetizado": false
+ },
+ "kitten_mew": {
+  "candidato": "bsb_pequeno1_agudo",
+  "fonte": "BigSoundBank - Little Meow of a Cat #1 (s0494)",
+  "autor": "Joseph Sardin",
+  "url": "https://bigsoundbank.com/little-meow-of-a-cat-s0494.html",
+  "licenca": "CC0 (pagina: 'CC0 (public domain)')",
+  "sintetizado": false
+ },
+ "purr": {
+  "candidato": "bsb_ronronar_suave",
+  "fonte": "BigSoundBank - Cat Purr (s0436)",
+  "autor": "Joseph Sardin",
+  "url": "https://bigsoundbank.com/cat-purr-s0436.html",
+  "licenca": "CC0 (pagina: 'CC0 (public domain)')",
+  "sintetizado": false
+ },
+ "pet": {
+  "candidato": "sint_blip",
+  "fonte": "Sintetizado por script (assets/tools/build_audio_candidates.py), sem amostras externas",
+  "autor": "projeto Chaoscats",
+  "url": "-",
+  "licenca": "CC0 / sem terceiros",
+  "sintetizado": true
+ },
+ "pet_2": {
+  "candidato": "ronronar_curto_2",
+  "fonte": "BigSoundBank - Cat Purr (s0436)",
+  "autor": "Joseph Sardin",
+  "url": "https://bigsoundbank.com/cat-purr-s0436.html",
+  "licenca": "CC0 (pagina: 'CC0 (public domain)')",
+  "sintetizado": false
+ },
+ "cat_death": {
+  "candidato": "poof_miadinho",
+  "fonte": "Sintetizado por script (assets/tools/build_audio_candidates.py), sem amostras externas; BigSoundBank - Little Meow of a Cat #1 (s0494)",
+  "autor": "projeto Chaoscats; Joseph Sardin",
+  "url": "https://bigsoundbank.com/little-meow-of-a-cat-s0494.html",
+  "licenca": "CC0 / sem terceiros; CC0 (pagina: 'CC0 (public domain)')",
+  "sintetizado": true
+ },
+ "cat_death_2": {
+  "candidato": "poof_miadinho_2",
+  "fonte": "Sintetizado por script (assets/tools/build_audio_candidates.py), sem amostras externas; BigSoundBank - Little meow of a cat #3 (s1473)",
+  "autor": "projeto Chaoscats; Joseph Sardin",
+  "url": "https://bigsoundbank.com/little-meow-of-a-cat-3-s1473.html",
+  "licenca": "CC0 / sem terceiros; CC0 (pagina: 'CC0 (public domain)')",
+  "sintetizado": true
+ },
+ "adopt": {
+  "candidato": "t10_8",
+  "fonte": "BigSoundBank - Little meow of a cat #3 (s1473); BigSoundBank - Cat Purr (s0436)",
+  "autor": "Joseph Sardin",
+  "url": "https://bigsoundbank.com/little-meow-of-a-cat-3-s1473.html; https://bigsoundbank.com/cat-purr-s0436.html",
+  "licenca": "CC0 (pagina: 'CC0 (public domain)')",
+  "sintetizado": false
+ },
+ "kitten_born": {
+  "candidato": "t10_8",
+  "fonte": "BigSoundBank - Little Meow of a Cat #1 (s0494); Kenney - Interface Sounds (glass_003)",
+  "autor": "Joseph Sardin; Kenney",
+  "url": "https://bigsoundbank.com/little-meow-of-a-cat-s0494.html; https://opengameart.org/content/interface-sounds",
+  "licenca": "CC0 (pagina: 'CC0 (public domain)'); CC0 1.0",
+  "sintetizado": false
+ }
+}

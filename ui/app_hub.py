@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pygame
 
-from ui import layout as L, scenes_hub
+from ui import audio, layout as L, scenes_hub, widgets as Wd
 from ui.app import DRAG_THRESHOLD
 from ui.display import Display
 from ui.controller import load_game_content
@@ -33,6 +33,8 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
               hora: str | None = None) -> None:
     """`hora` ("HH:MM") fixa a hora do cercado; sem ela usa a hora do computador."""
     pygame.init()
+    audio.setup(legacy_dirs=(Path(save_path).parent,) if save_path else ())
+    hover = audio.HoverSound()
     disp = Display()
     clock = pygame.time.Clock()
     if scene:
@@ -54,6 +56,7 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
         rc = hub.rc if hub.mode == "run" else None
         duel = rc.duel_ctrl if rc and rc.screen == "duel" and not rc.quit_confirm else None
         for ev in pygame.event.get():
+            audio.on_event(ev)
             if ev.type == pygame.QUIT:
                 running = False
             elif ev.type == pygame.TEXTINPUT:
@@ -61,6 +64,8 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
             elif ev.type == pygame.MOUSEWHEEL:
                 hub.scroll(-ev.y)
             elif disp.handle_key(ev):
+                pass
+            elif ev.type == pygame.KEYDOWN and audio.handle_key(ev.key, hub.editing_text):
                 pass
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
@@ -91,6 +96,7 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
             elif ev.type == pygame.MOUSEMOTION:
                 pos = internal(ev.pos)
                 ui.mouse = pos
+                hover.update(hub.hit(pos))
                 if duel is not None and press and ui.drag is None and press[0] is not None:
                     if math.dist(pos, press[1]) > DRAG_THRESHOLD and duel.drag_start(press[0]):
                         ui.drag = (press[0], pos)
@@ -111,8 +117,11 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
         if hub.rc is not None and hub.rc.duel_ctrl is not None:
             hub.rc.duel_ctrl.speed = 6.0 if pygame.key.get_pressed()[pygame.K_SPACE] else 1.0
         hub.update(dt)
+        audio.music(hub.audio_context())
+        audio.update(dt)
         ui.t += dt
         draw_hub_frame(canvas, hub, ui)
+        Wd.mute_badge(canvas)
         disp.render(canvas)
         pygame.display.flip()
         await asyncio.sleep(0)

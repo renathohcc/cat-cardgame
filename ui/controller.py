@@ -36,7 +36,7 @@ from core.types import (
     EffectPlayed, EndTurn, EnergyChanged, FieldCat, Healed, IllegalAction, LeaderDamaged,
     LeaderHealed, PlayCat, PlayEffect, TurnStarted,
 )
-from ui import text as T
+from ui import audio, text as T
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DICE_TIME = 2.6
@@ -311,6 +311,8 @@ class Controller:
     # ------------------------------------------------------------ mensagens
     def say(self, text: str, kind: str = "error", ttl: float = 2.5) -> None:
         self.toast = Toast(text, kind, ttl)
+        if kind == "error":
+            audio.sfx("ui_denied")
 
     def _log(self, text: str, side: str) -> None:
         self.log.append((text, side))
@@ -364,6 +366,12 @@ class Controller:
             if elem and elem[0] != "none":
                 self.say("Aguarde: é o turno do inimigo", "info", 1.2)
             return
+        before = self.sel
+        self._click_play(elem)
+        if self.sel is not None and self.sel != before:
+            audio.sfx("ui_click")
+
+    def _click_play(self, elem: tuple | None) -> None:
         if self.confirming:
             if elem == ("pass_yes",):
                 self.confirm_end_turn()
@@ -397,6 +405,7 @@ class Controller:
         elif self.has_other_moves():
             self.cancel()
             self.confirming = True
+            audio.sfx("ui_open_modal")
         else:
             self.end_turn()
 
@@ -554,6 +563,7 @@ class Controller:
         if action in self.legal:
             self._do(action)
         elif self.taunt_in_way():
+            audio.sfx("shield_protected")
             self.say("Provocar: derrote primeiro o gato com Provocar", "error")
         else:
             self.say("Esse alvo não é permitido", "error")
@@ -623,7 +633,9 @@ class Controller:
             line = T.describe(ev, self.shown)
             if line:
                 self._log(*line)
-            self._fx_for(ev, starting=any(isinstance(e, TurnStarted) for e in beat.events))
+            starting = any(isinstance(e, TurnStarted) for e in beat.events)
+            self._fx_for(ev, starting=starting)
+            self._sfx_for(ev, starting)
             self._apply_shown(ev)
 
     def _target_side(self, ev: EffectPlayed) -> tuple[str, int | None] | None:
@@ -682,6 +694,34 @@ class Controller:
             self.banner = (["IMPASSE!", f"Poder dos Líderes: você {ev.powers['player']}, "
                             f"inimigo {ev.powers['enemy']}",
                             "Começa: " + ("você" if ev.first == "player" else "o inimigo")], 2.6)
+
+    def _sfx_for(self, ev: Any, starting: bool) -> None:
+        """Som de cada evento (so audio; mesmos eventos que ja viram feedback visual)."""
+        if isinstance(ev, TurnStarted):
+            audio.sfx("turn_start_player" if ev.side == "player" else "turn_start_enemy")
+        elif isinstance(ev, Drew):
+            if ev.side == "player":
+                audio.sfx("card_draw")
+        elif isinstance(ev, CatPlayed):
+            audio.sfx("card_play_spirit" if ev.card.kind == "special" else "card_play_cat")
+        elif isinstance(ev, EffectPlayed):
+            if ev.card.kind == "effect":
+                audio.sfx("card_play_effect")
+        elif isinstance(ev, Attacked):
+            audio.sfx("attack_swing")
+        elif isinstance(ev, DamageDealt):
+            audio.sfx("attack_hit")
+        elif isinstance(ev, LeaderDamaged):
+            audio.sfx("leader_hit")
+        elif isinstance(ev, CatDied):
+            audio.sfx("cat_death")
+        elif isinstance(ev, (Healed, LeaderHealed)):
+            audio.sfx("heal")
+        elif isinstance(ev, AtkBuffed):
+            audio.sfx("buff")
+        elif isinstance(ev, EnergyChanged) and not starting:
+            if ev.energy > T.side_view(self.shown, ev.side).energy:
+                audio.sfx("energy_up")
 
     def _tag_fx(self, side: str, where: str, text: str, color: str) -> None:
         """Texto flutuante em posicao fixa; o render decide o retangulo por `card`=where."""
@@ -810,6 +850,7 @@ class Controller:
             self.phase = "over"
             self.over_t = 0.0
             self.final_line = self._pick_line()
+            audio.sfx("duel_victory" if d.winner == "player" else "duel_defeat")
             return
         if d.turn_side == "enemy":
             self.ai_t += dt

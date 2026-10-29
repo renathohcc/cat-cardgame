@@ -30,6 +30,8 @@ HIT_W, HIT_H = 40, 44
 OBJ_HIT_W, OBJ_HIT_H = 56, 30
 OBJ_POKE_S = 2.5
 LOVE_EVERY = 3.0
+MEOW_MIN_S, MEOW_MAX_S = 7.0, 16.0     # intervalo entre miados esporadicos
+MEOWS = ("meow_1", "meow_2", "meow_3", "meow_4")
 
 
 @dataclass
@@ -125,8 +127,13 @@ class Heart:
 
 class PenController:
     def __init__(self, rng: Random, geo: PenGeometry | None = None, max_cats: int = FALLBACK_MAX_CATS,
-                 clock: Callable[[], datetime] | None = None, zone_caps: dict[str, int] | None = None) -> None:
+                 clock: Callable[[], datetime] | None = None, zone_caps: dict[str, int] | None = None,
+                 audio_rng: Random | None = None) -> None:
         self.rng = rng
+        # audio: RNG proprio (nao mexe no sorteio do comportamento); `sounds` e esvaziado por quem toca
+        self.audio_rng = audio_rng or Random(0)
+        self.sounds: list[str] = []
+        self.meow_cd = self.audio_rng.uniform(MEOW_MIN_S, MEOW_MAX_S)
         self.clock = clock                    # None = meio-dia fixo (deterministico); o jogo passa datetime.now
         self.day = daycycle.day_state(clock() if clock else None)
         self._day_acc = 0.0
@@ -301,6 +308,7 @@ class PenController:
         self._release(c)
         c.state, c.timer, c.goal = "react", REACT_S, None
         c.hearts_left, c.heart_cd = 3, 0.0
+        self.sounds += ["pet", "purr"]
         return True
 
     def poke_object(self, index: int) -> bool:
@@ -352,6 +360,19 @@ class PenController:
         self._separate()
         self._objects(dt)
         self._hearts(dt)
+        self._meows(dt)
+        del self.sounds[:-16]
+
+    def _meows(self, dt: float) -> None:
+        """Miado esporadico de um gato em cena (filhote usa o miado de filhote)."""
+        self.meow_cd -= dt
+        if self.meow_cd > 0:
+            return
+        self.meow_cd = self.audio_rng.uniform(MEOW_MIN_S, MEOW_MAX_S)
+        live = sorted((c for c in self.cats if not c.leaving and c.fade > 0.5), key=lambda c: c.cat_id)
+        if live:
+            c = self.audio_rng.choice(live)
+            self.sounds.append("kitten_mew" if c.kitten else self.audio_rng.choice(MEOWS))
 
     def refresh_day(self) -> None:
         """Recalcula o periodo do dia pelo relogio (chamado a cada ~30 s)."""
@@ -566,6 +587,7 @@ class PenController:
         n = sum(1 for c in self.cats if c.obj == o.index and c.state == "sleep" and not c.leaving)
         if n > 0 and o.sleepers == 0:
             o.oneshot, o.oneshot_t = "enter", 0.0
+            self.sounds.append("bed_settle")
         elif n == 0 and o.sleepers > 0:
             o.oneshot, o.oneshot_t = "exit", 0.0
         o.sleepers = n
