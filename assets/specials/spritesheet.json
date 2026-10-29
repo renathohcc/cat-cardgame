@@ -1,0 +1,57 @@
+{
+  "image": "spritesheet.png",
+  "size": [
+    192,
+    96
+  ],
+  "sprites": {
+    "sombra-miuda": {
+      "x": 0,
+      "y": 0,
+      "w": 48,
+      "h": 48
+    },
+    "velha-dos-novelos": {
+      "x": 48,
+      "y": 0,
+      "w": 48,
+      "h": 48
+    },
+    "soneca-ancestral": {
+      "x": 96,
+      "y": 0,
+      "w": 48,
+      "h": 48
+    },
+    "trovao-amarelo": {
+      "x": 144,
+      "y": 0,
+      "w": 48,
+      "h": 48
+    },
+    "guardiao-bigodudo": {
+      "x": 0,
+      "y": 48,
+      "w": 48,
+      "h": 48
+    },
+    "mestre-das-garras": {
+      "x": 48,
+      "y": 48,
+      "w": 48,
+      "h": 48
+    },
+    "pelo-de-aco": {
+      "x": 96,
+      "y": 48,
+      "w": 48,
+      "h": 48
+    },
+    "gata-das-brasas": {
+      "x": 144,
+      "y": 48,
+      "w": 48,
+      "h": 48
+    }
+  }
+}

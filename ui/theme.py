@@ -1,7 +1,15 @@
 """Paleta e constantes visuais (placeholders). Trocar aqui para re-colorir tudo."""
 from __future__ import annotations
 
-W, H = 480, 270            # resolucao interna
+# Resolucao interna do jogo (decisao T8.2: 960x540, 16:9, arte nativa 96x96). UNICO lugar.
+W, H = 960, 540
+
+# Fonte: a fonte bitmap assets/fonts/chaoscats_16/32 (ui/font.py) e a padrao; sem os arquivos cai na 5x7.
+# FONT_FILE abaixo e um override opcional (TTF/OTF). None = nenhum.
+# (antes: None = fonte pixel 5x7 embutida) Para usar uma fonte TTF/OTF, ponha o arquivo
+# em assets/fonts/ e escreva o nome aqui (FONT_PX = tamanho nativo em px). So muda aqui.
+FONT_FILE: str | None = None
+FONT_PX = 16
 
 C = {
     "bg": (24, 28, 44),
@@ -41,6 +49,12 @@ C = {
     "special_bg": (68, 60, 40),
     "buff": (255, 214, 64),
     "energy": (140, 200, 255),
+    # tabuleiro do duelo (provisorio: a arte final substitui o fundo)
+    "board_top": (30, 36, 58),
+    "board_bot": (20, 24, 40),
+    "board_band": (38, 46, 72),
+    "gem_hp": (214, 60, 70),
+    "gem_energy": (90, 190, 255),
 }
 
 BREED_COLOR = {
@@ -62,6 +76,15 @@ KEYWORD_LONG = {"provocar": "PROVOCAR", "investida": "INVESTIDA",
                 "primeira-patada": "1A PATADA", "robusto": "ROBUSTO"}
 KEYWORD_SHORT = {"provocar": "PROV", "investida": "INVE", "primeira-patada": "1PAT",
                  "robusto": "ROBU"}
+
+# Badges da carta de duelo: letra curta por keyword (o texto completo vai para o tooltip)
+KEYWORD_BADGE = {"provocar": "P", "investida": "I", "primeira-patada": "1", "robusto": "R"}
+# Efeitos / Espirito: letra e cor por tipo de acao
+EFFECT_BADGE = {"dano": ("D", (255, 96, 96)), "cura": ("C", (96, 230, 120)),
+                "buff_atk": ("A", (255, 214, 64)), "comprar": ("+", (140, 200, 255)),
+                "energia": ("E", (140, 200, 255))}
+# Fundo da janela de arte da carta (jogador, inimigo, Espirito, efeito)
+ART_BG = {"card": (38, 44, 68), "enemy": (60, 42, 52), "special": (54, 48, 32), "effect": (42, 34, 74)}
 
 NATURE_COLOR = {"calmo": (120, 190, 255), "bravo": (255, 150, 90), "agitado": (255, 100, 160)}
 

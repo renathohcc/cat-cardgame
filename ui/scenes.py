@@ -8,7 +8,7 @@ from ui import layout as L
 from ui.controller import Controller
 from ui.render import UIState
 
-SCENES = ("inicio", "selecionado", "ataque", "final", "dado", "tooltip", "confirmar",
+SCENES = ("inicio", "selecionado", "ataque", "final", "dado", "tooltip", "tooltip_mao", "confirmar",
           "efeito", "espirito", "chefe")
 
 
@@ -46,6 +46,10 @@ def build(ctrl: Controller, name: str) -> UIState:
             else:
                 ctrl.end_turn()
             ctrl.settle()
+        return ui
+    if name == "tooltip_mao":
+        if ctrl.shown.me.hand:
+            ui.mouse = L.hand_rect(min(1, len(ctrl.shown.me.hand) - 1), len(ctrl.shown.me.hand)).center
         return ui
     if name == "confirmar":
         for _ in range(40):

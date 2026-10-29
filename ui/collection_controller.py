@@ -72,7 +72,8 @@ class CollectionController:
         cat = self.selected_cat()
         if cat is None:
             return ""
-        return f"Doar {cat.name or self.breed_name(cat)} por {self.donate_value(cat)} moedas?"
+        v = self.donate_value(cat)
+        return f"Doar {cat.name or self.breed_name(cat)} por {v} moeda{'s' if v != 1 else ''}?"
     def say(self, text: str, kind: str = "error", ttl: float = 2.5) -> None:
         self.toast = Toast(text, kind, ttl)
 

@@ -659,10 +659,10 @@ def test_frases_de_efeito_mencionam_o_valor(content):
 
 
 # ================================================================= 6. layout
-def test_final_panel_novo_cabe_em_480x270_e_tem_o_tamanho_esperado():
+def test_final_panel_novo_cabe_em_960x540_e_tem_o_tamanho_esperado():
     p = L.final_panel()
-    assert (p.x, p.y, p.w, p.h) == (80, 36, 320, 198)
-    assert pygame_rect(0, 0, 480, 270).contains(p)
+    assert (p.x, p.y, p.w, p.h) == (180, 60, 600, 420)
+    assert pygame_rect(0, 0, 960, 540).contains(p)
 
 
 def pygame_rect(*a):
@@ -673,7 +673,7 @@ def pygame_rect(*a):
 def test_botoes_do_painel_final_continuam_dentro_do_painel_maior():
     p, b = L.final_panel(), L.final_buttons()
     for r in b.values():
-        assert p.contains(r) and pygame_rect(0, 0, 480, 270).contains(r)
+        assert p.contains(r) and pygame_rect(0, 0, 960, 540).contains(r)
     assert not b["again"].colliderect(b["repeat"])
     for name, r in b.items():
         assert L.hit_test(r.center, 3, final=True) == (name,)
@@ -693,7 +693,7 @@ def _cena(cena, enemy, tmp_path, monkeypatch, seed=1):
     assert len(data) > 1000 and data[:8] == b"\x89PNG\r\n\x1a\n"
     import pygame
     img = pygame.image.load(str(out))
-    assert img.get_size() == (480 * 3, 270 * 3)
+    assert img.get_size() == (960, 540)
     cores = {tuple(img.get_at((x, y)))[:3] for x in range(0, img.get_width(), 19)
              for y in range(0, img.get_height(), 19)}
     assert len(cores) > 3
@@ -729,7 +729,7 @@ def test_desenho_com_hover_em_tudo_nas_cenas_novas_nao_levanta(monkeypatch):
     pygame.init()
     from ui import scenes_novas
     from ui.render import UIState, draw_frame
-    canvas = pygame.Surface((480, 270))
+    canvas = pygame.Surface((960, 540))
     for cena in scenes_novas.NEW_SCENES:
         ctrl = scenes_novas.make(1, cena)
         assert ctrl is not None

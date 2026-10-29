@@ -81,8 +81,9 @@ def test_canto_superior_esquerdo_mapeia_para_origem(win):
 def test_canto_inferior_direito_mapeia_para_perto_do_fim(win):
     x, y, w, h = dest_rect(win)
     ix, iy = to_internal((x + w - 1, y + h - 1), win)
-    assert W - 3 <= ix <= W - 1
-    assert H - 3 <= iy <= H - 1
+    tol = 2 + int(W / w)                   # janela menor que o canvas: 1 px da janela = varios internos
+    assert W - 1 - tol <= ix <= W - 1
+    assert H - 1 - tol <= iy <= H - 1
 
 
 @pytest.mark.parametrize("win", [(480, 270), (960, 540), (1920, 1080), (1366, 768), (1000, 300)])
@@ -126,7 +127,8 @@ def test_ida_e_volta_interno_tela_interno_erro_menor_que_1px(win):
         cx = tx + w / W / 2
         cy = ty + h / H / 2
         bx, by = to_internal((int(cx), int(cy)), win)
-        assert abs(bx - ix) < 1 + 1e-9 and abs(by - iy) < 1 + 1e-9
+        tol = max(1.0, W / w) + 1e-9      # janela menor que o canvas: erro de ate 1 px da janela
+        assert abs(bx - ix) < tol and abs(by - iy) < tol
 
 
 # ---------------- render_scaled ----------------

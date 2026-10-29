@@ -1,0 +1,57 @@
+{
+  "image": "spritesheet.png",
+  "size": [
+    384,
+    192
+  ],
+  "sprites": {
+    "arranhao-certeiro": {
+      "x": 0,
+      "y": 0,
+      "w": 96,
+      "h": 96
+    },
+    "bote-no-lider": {
+      "x": 96,
+      "y": 0,
+      "w": 96,
+      "h": 96
+    },
+    "lambida-curativa": {
+      "x": 192,
+      "y": 0,
+      "w": 96,
+      "h": 96
+    },
+    "soneca-no-sol": {
+      "x": 288,
+      "y": 0,
+      "w": 96,
+      "h": 96
+    },
+    "rugido-de-guerra": {
+      "x": 0,
+      "y": 96,
+      "w": 96,
+      "h": 96
+    },
+    "petisco-surpresa": {
+      "x": 96,
+      "y": 96,
+      "w": 96,
+      "h": 96
+    },
+    "farejar-a-despensa": {
+      "x": 192,
+      "y": 96,
+      "w": 96,
+      "h": 96
+    },
+    "cochilo-revigorante": {
+      "x": 288,
+      "y": 96,
+      "w": 96,
+      "h": 96
+    }
+  }
+}

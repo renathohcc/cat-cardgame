@@ -205,11 +205,11 @@ A base é Python puro com pygame, sem engine pronta, porque foi onde o desenvolv
 
 O estilo é pixel art fofa, com poucos desenhos reaproveitados por camadas, para que cada gato pareça único sem exigir muita arte.
 
-- **Resolução interna:** 480×270, escalada em múltiplos inteiros (1080p e 4K ficam nítidos, e funciona no Steam Deck).
+- **Resolução interna:** 960×540 (16:9), com arte nativa em 96×96 para gatos, Espíritos e efeitos, e ícones de 16×16. A tela escala de forma fracionária com letterbox e tem tela cheia (F11 ou Alt+Enter); funciona no Steam Deck.
 - **Gato por camadas:** um corpo base por raça, com pelagem trocada por código (palette swap) e camadas de acessório e expressão.
 - **Raridade visível:** pelagens raras, olhos diferentes e brilho para IVs altos, para o jogador perceber um bom gato de relance.
-- **Cards:** moldura simples por tipo (gato, Gato Especial, efeito), com custo, ATK e HP legíveis e as estrelas de IV em destaque.
-- **Interface:** sem cenários. Fundos de cor sólida ou padrão simples, mesa de duelo e o hub com telas estáticas.
+- **Cards (duelo):** carta limpa, só com nome, custo de energia, ATK e HP. As keywords viram badges pequenas com ícone, e natureza, sexo, IV e descrição aparecem em tooltip ao passar o mouse. Nas telas do hub (coleção, adoção, criatório) raça, sexo, natureza e IV (estrelas) ficam sempre visíveis.
+- **Interface:** tabuleiro limpo, parecido em organização com um card game digital clássico, sem cenário complexo e sem quadrado ao redor de cada slot (tema noturno: pedra azul, prata e ouro pálido). Líder de cada lado com retrato próprio (o herói e os inimigos são pessoas) e HP em gema; o Líder não tem poder.
 - **Fonte:** uma única fonte pixel em todo o jogo.
 - **Ordem de produção:** retângulos e texto primeiro, para validar a diversão, e só depois a pixel art final.
 

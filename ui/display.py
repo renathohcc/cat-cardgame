@@ -9,8 +9,8 @@ import pygame
 
 from ui.theme import H, W
 
-START_SIZE = (W * 3, H * 3)
-MIN_SIZE = (W, H)
+START_SIZE = (W * 3 // 2, H * 3 // 2)      # 1440x810
+MIN_SIZE = (W // 2, H // 2)
 TITLE = "Chaoscats"
 
 

@@ -1,0 +1,63 @@
+{
+  "image": "spritesheet.png",
+  "size": [
+    81,
+    9
+  ],
+  "sprites": {
+    "provocar": {
+      "x": 0,
+      "y": 0,
+      "w": 9,
+      "h": 9
+    },
+    "investida": {
+      "x": 9,
+      "y": 0,
+      "w": 9,
+      "h": 9
+    },
+    "primeira-patada": {
+      "x": 18,
+      "y": 0,
+      "w": 9,
+      "h": 9
+    },
+    "robusto": {
+      "x": 27,
+      "y": 0,
+      "w": 9,
+      "h": 9
+    },
+    "acao-dano": {
+      "x": 36,
+      "y": 0,
+      "w": 9,
+      "h": 9
+    },
+    "acao-cura": {
+      "x": 45,
+      "y": 0,
+      "w": 9,
+      "h": 9
+    },
+    "acao-buff_atk": {
+      "x": 54,
+      "y": 0,
+      "w": 9,
+      "h": 9
+    },
+    "acao-comprar": {
+      "x": 63,
+      "y": 0,
+      "w": 9,
+      "h": 9
+    },
+    "acao-energia": {
+      "x": 72,
+      "y": 0,
+      "w": 9,
+      "h": 9
+    }
+  }
+}

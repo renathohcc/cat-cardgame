@@ -132,7 +132,7 @@ def test_painel_final_em_run_mode_so_tem_continuar(content):
     assert rc.duel_ctrl.run_mode
     assert rc.hit(L.final_buttons()["again"].center) is None
     assert rc.hit(L.final_buttons()["repeat"].center) is None
-    assert rc.hit(LR.continue_rect().center) == ("continue",)
+    assert rc.hit(L.continue_rect().center) == ("continue",)
     rc.click(("again",))
     rc.click(("repeat",))
     assert rc.screen == "duel" and rc.duel_ctrl.over       # ignorados em run_mode
@@ -431,7 +431,7 @@ def _rects_todos():
         d[f"card{i}"] = LR.draft_card_rect(i, 3)
         d[f"pick{i}"] = LR.draft_pick_rect(i, 3)
     d["deck"] = LR.draft_deck_rect()
-    d["continue"] = LR.continue_rect()
+    d["continue"] = L.continue_rect()
     d.update({f"fim_{k}": r for k, r in LR.end_buttons().items()})
     d["quitpanel"] = LR.quit_panel()
     d.update({f"q_{k}": r for k, r in LR.quit_buttons().items()})
@@ -470,9 +470,9 @@ def test_layout_run_botoes_de_cada_tela_nao_se_sobrepoem():
 
 @pytest.mark.parametrize("escala", [1, 2, 3, 4])
 def test_hit_test_devolve_os_elementos_certos_em_todas_as_escalas(escala):
-    size = (W * escala, H * escala)
+    size = (W * escala, H * escala)               # janela em escala inteira do canvas 960x540
 
-    def pt(r):
+    def pt(r):                                    # mouse na janela -> coordenadas internas 960x540
         return L.to_internal((r.centerx * escala, r.centery * escala), size)
 
     nodes = [(f"id{k}", r) for k, r in _rects_mapa().items()]

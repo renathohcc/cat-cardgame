@@ -1,0 +1,76 @@
+{
+  "tema": "taverna",
+  "pieces": {
+    "energia_cheia": {
+      "file": "taverna/energia_cheia.png",
+      "w": 24,
+      "h": 24
+    },
+    "energia_vazia": {
+      "file": "taverna/energia_vazia.png",
+      "w": 24,
+      "h": 24
+    },
+    "hp_lider": {
+      "file": "taverna/hp_lider.png",
+      "w": 40,
+      "h": 40
+    },
+    "botao_fim_turno_normal": {
+      "file": "taverna/botao_fim_turno_normal.png",
+      "w": 152,
+      "h": 64,
+      "nine_slice": [
+        8,
+        8,
+        8,
+        12
+      ]
+    },
+    "botao_fim_turno_hover": {
+      "file": "taverna/botao_fim_turno_hover.png",
+      "w": 152,
+      "h": 64,
+      "nine_slice": [
+        8,
+        8,
+        8,
+        12
+      ]
+    },
+    "botao_fim_turno_desabilitado": {
+      "file": "taverna/botao_fim_turno_desabilitado.png",
+      "w": 152,
+      "h": 64,
+      "nine_slice": [
+        8,
+        8,
+        8,
+        12
+      ]
+    },
+    "tooltip": {
+      "file": "taverna/tooltip.png",
+      "w": 48,
+      "h": 48,
+      "nine_slice": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "baralho_moldura": {
+      "file": "taverna/baralho_moldura.png",
+      "w": 152,
+      "h": 76,
+      "nine_slice": [
+        8,
+        8,
+        8,
+        8
+      ]
+    }
+  },
+  "nota": "nine_slice = [esq, topo, dir, base] em px; botoes sem texto"
+}

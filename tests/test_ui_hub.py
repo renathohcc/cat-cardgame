@@ -614,34 +614,36 @@ def test_filtro_nao_altera_o_deck(content):
     assert h.col.picked == antes
 
 
-def test_rolagem_com_30_gatos_mostra_14_linhas_e_limita_nas_pontas(content):
+def test_rolagem_com_30_gatos_mostra_as_linhas_visiveis_e_limita_nas_pontas(content):
+    n = LH.ROWS_VISIBLE
     h = hub_grande(content, 30)
     col = h.col
-    assert len(col.visible_rows()) == LH.ROWS_VISIBLE == 14
-    assert col.max_scroll() == 30 - 14
+    assert len(col.visible_rows()) == n
+    assert col.max_scroll() == 30 - n
     h.scroll(-3)
     assert col.scroll == 0
     h.scroll(5)
     assert col.scroll == 5
     h.scroll(1000)
-    assert col.scroll == 16
+    assert col.scroll == 30 - n
     ult = col.visible_rows()
-    assert len(ult) == 14 and ult[-1].cat.id == col.rows()[-1].cat.id
+    assert len(ult) == n and ult[-1].cat.id == col.rows()[-1].cat.id
     h.click(("scroll", -1))
-    assert col.scroll == 15
+    assert col.scroll == 30 - n - 1
     h.click(("scroll", 1))
     h.click(("scroll", 1))
-    assert col.scroll == 16
+    assert col.scroll == 30 - n
 
 
 def test_rolagem_muda_as_linhas_visiveis_e_clique_acerta_o_gato_certo(content):
     h = hub_grande(content, 30)
     col = h.col
     todas = [r.cat.id for r in col.rows()]
-    assert col.visible_ids() == todas[:14]
+    n = LH.ROWS_VISIBLE
+    assert col.visible_ids() == todas[:n]
     h.scroll(10)
-    assert col.visible_ids() == todas[10:24]
-    for i in (0, 13):
+    assert col.visible_ids() == todas[10:10 + n]
+    for i in (0, n - 1):
         elem = h.hit(LH.row_rect(i).center)
         assert elem == ("row", todas[10 + i])
     alvo = todas[10]
@@ -658,13 +660,14 @@ def test_botoes_de_rolagem_por_hit_test(content):
     assert h.col.scroll == 1
 
 
-def test_sem_rolagem_com_14_gatos_ou_menos(content):
-    h = hub_grande(content, 14)
+def test_sem_rolagem_quando_cabe_nas_linhas_visiveis(content):
+    h = hub_grande(content, 12)
+    total = len(h.col.rows())
+    assert h.col.max_scroll() == max(0, total - LH.ROWS_VISIBLE)
+    h.col.filter_breed = "inexistente"          # lista vazia cabe sempre
     assert h.col.max_scroll() == 0
     h.scroll(5)
     assert h.col.scroll == 0
-    h2 = hub_grande(content, 12)
-    assert h2.col.max_scroll() == 0
 
 
 def test_rolagem_ignorada_durante_a_edicao(content):
@@ -679,7 +682,7 @@ def test_rolagem_se_ajusta_quando_o_filtro_reduz_a_lista(content):
     h.scroll(16)
     h.click(("filter",))
     assert h.col.scroll <= h.col.max_scroll()
-    assert len(h.col.visible_rows()) <= 14
+    assert len(h.col.visible_rows()) <= LH.ROWS_VISIBLE
 
 
 def test_lista_vazia_com_filtro_sem_gatos_nao_quebra(content):
@@ -782,8 +785,11 @@ def test_esc_na_colecao_volta_ao_menu_e_esc_na_edicao_so_cancela(content):
 TELA = pygame.Rect(0, 0, W, H)
 
 
-def test_tela_interna_e_480x270():
-    assert (W, H) == (480, 270)
+def test_tela_interna_e_960x540_nativa():
+    from ui import theme
+    assert (theme.W, theme.H) == (960, 540)
+    assert (W, H) == (960, 540)
+    assert not hasattr(theme, "LW") and not hasattr(theme, "LH")
 
 
 def rects_menu() -> dict[str, pygame.Rect]:
@@ -874,7 +880,8 @@ def test_hit_test_colecao(content):
     h = hub_grande(content, 14)
     ids = h.col.visible_ids()
     assert h.hit(LH.row_rect(0).center) == ("row", ids[0])
-    assert h.hit(LH.row_rect(13).center) == ("row", ids[13])
+    last = LH.ROWS_VISIBLE - 1
+    assert h.hit(LH.row_rect(last).center) == ("row", ids[last])
     for i, k in enumerate(LH.SORT_KEYS):
         assert h.hit(LH.sort_button(i).center) == ("sort", k)
     assert h.hit(LH.filter_button().center) == ("filter",)
@@ -886,8 +893,12 @@ def test_hit_test_colecao(content):
 
 def test_hit_test_linha_vazia_nao_responde_com_poucos_gatos(content):
     h = hub_grande(content, 12)
-    assert h.hit(LH.row_rect(13).center) is None
-    assert h.hit(LH.row_rect(11).center) == ("row", h.col.visible_ids()[11])
+    n = LH.ROWS_VISIBLE
+    assert len(h.col.visible_ids()) == min(12, n)
+    if n > 12:
+        assert h.hit(LH.row_rect(n - 1).center) is None
+    assert h.hit(LH.row_rect(min(12, n) - 1).center) == ("row", h.col.visible_ids()[min(12, n) - 1])
+    assert h.hit((W - 1, H - 1)) is None
 
 
 def test_hit_test_renomear(content):

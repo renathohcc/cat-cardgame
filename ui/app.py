@@ -41,7 +41,7 @@ def screenshot(path: str, seed: int, scene: str, enemy: str | None = None) -> No
     draw_frame(canvas, ctrl, ui)
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    pygame.image.save(pygame.transform.scale(canvas, (W * 3, H * 3)), str(out))
+    pygame.image.save(canvas, str(out))
 
 
 async def run(seed: int, enemy: str | None = None) -> None:

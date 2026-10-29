@@ -24,7 +24,7 @@ def screenshot(path: str, seed: int, scene: str) -> None:
     draw_hub_frame(canvas, hub, ui)
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    pygame.image.save(pygame.transform.scale(canvas, (W * 3, H * 3)), str(out))
+    pygame.image.save(canvas, str(out))
 
 
 async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str | None = None) -> None:

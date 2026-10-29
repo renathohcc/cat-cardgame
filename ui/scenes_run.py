@@ -9,7 +9,7 @@ from ui.controller import load_game_content
 from ui.render import UIState
 from ui.run_controller import RunController
 
-RUN_SCENES = ("mapa", "draft", "draft_elite_1", "draft_elite_2", "descanso", "fimrun", "fimrun_vitoria", "duelrun")
+RUN_SCENES = ("mapa", "draft", "draft_elite_1", "draft_elite_2", "descanso", "fimrun", "fimrun_vitoria", "duelrun", "abandonar")
 
 
 def play_duel(rc: RunController, rng: Random) -> bool:
@@ -63,6 +63,11 @@ def make(seed: int, name: str) -> tuple[RunController, UIState] | None:
             if _until(rc, rng, lambda r: r.run.layer >= 2 and r.screen == "map",
                       prefer={"c2-descanso"}):
                 ui.mouse = LR.node_rect(3, 0, 2, 6).center
+                return rc, ui
+        elif name == "abandonar":                  # mapa com a confirmacao de abandono aberta
+            if _until(rc, rng, lambda r: r.run.layer >= 1 and r.screen == "map"):
+                rc.quit_confirm = True
+                ui.mouse = LR.quit_buttons()["quit_no"].center
                 return rc, ui
         elif name == "draft":
             if _until(rc, rng, lambda r: r.screen == "draft"):

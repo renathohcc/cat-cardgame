@@ -49,6 +49,7 @@ class RunController:
         self.last_pick: str | None = None
         self.draft_from: str = ""             # tipo do no que abriu o draft
         self.end_line: tuple[str, str] | None = None   # (pessoa, fala) no fim da run
+        self.end_leader_id: str | None = None          # id do inimigo que falou (retrato)
         self.duels_started = 0
         self.abandoned = False
 
@@ -192,7 +193,7 @@ class RunController:
     def duel_hit(self, pos: tuple[int, int]) -> tuple | None:
         c = self.duel_ctrl
         if c.final_visible:
-            return ("continue",) if LR.continue_rect().collidepoint(pos) else None
+            return ("continue",) if L.continue_rect().collidepoint(pos) else None
         return L.hit_test(pos, len(c.shown.me.hand), confirm=c.confirming)
 
     def click(self, elem: tuple | None) -> None:
@@ -291,6 +292,7 @@ class RunController:
         node_type = self.run.node["tipo"] if self.run.node else ""
         won = c.duel.winner == "player"
         line, who = c.final_line, c.enemy_name()
+        leader_id = c.enemy_id
         self.run.finish_duel(c.duel)
         self.duel_ctrl = None
         if self.run.status == "draft":
@@ -299,6 +301,7 @@ class RunController:
         elif self.run.status == "finished":
             if line and (not won or node_type == "chefe"):
                 self.end_line = (who, line)
+                self.end_leader_id = leader_id
             self._on_finished()
 
     def click_draft(self, i: int) -> None:

@@ -1,4 +1,4 @@
-"""Testes do layout da UI (retangulos 480x270, hit test, mouse -> coordenadas internas).
+"""Testes do layout da UI (retangulos 960x540, hit test, mouse -> coordenadas internas).
 
 Nao abre janela: `pygame.Rect` funciona sem display. Escritos a partir do comportamento
 descrito em reports/T2.1-ui-duelo.md (resolucao interna 480x270, escala inteira maxima
@@ -13,7 +13,8 @@ import pytest
 
 from ui import layout as L
 
-W, H = 480, 270
+from ui.theme import H, W  # resolucao interna (T8.2: 960x540)
+
 HAND_MAX = 7          # data/rules.json: duel.hand_max
 
 
@@ -21,7 +22,9 @@ def fixed_rects() -> dict[str, pygame.Rect]:
     r = {f"slot-{s}-{n}": L.slot_rect(s, n) for s in ("enemy", "player") for n in range(5)}
     r.update({f"leader-{s}": L.leader_rect(s) for s in ("enemy", "player")})
     r.update({"pass": L.pass_rect(), "turn": L.turn_rect(), "info": L.info_rect(),
-              "log": L.log_rect(), "energy": L.energy_rect(), "message": L.message_rect()})
+              "log": L.log_rect(), "energy": L.energy_rect(), "message": L.message_rect(),
+              "enemy_pile": L.enemy_pile_rect(), "pile": L.pile_rect()})
+    r.update({f"taunt-{s}": L.leader_taunt_rect(s) for s in ("enemy", "player")})
     return r
 
 
@@ -44,11 +47,13 @@ def test_slots_lideres_e_paineis_nao_se_sobrepoem():
 @pytest.mark.parametrize("n", range(1, HAND_MAX + 1))
 def test_cartas_da_mao_nao_se_sobrepoem_entre_si_nem_com_o_resto(n):
     hand = [L.hand_rect(i, n) for i in range(n)]
-    for a, b in combinations(hand, 2):
-        assert not a.colliderect(b)
+    if n <= 6:                          # com 7 cartas a mao e um leque (cartas se sobrepoem entre si)
+        for a, b in combinations(hand, 2):
+            assert not a.colliderect(b)
     for name, other in fixed_rects().items():
-        for i, h in enumerate(hand):
-            assert not h.colliderect(other), f"mao {i}/{n} sobrepoe {name}"
+        for i in range(n):
+            for h in (hand[i], L.hand_hit_rect(i, n)):          # em repouso e com a subida do hover
+                assert not h.colliderect(other), f"mao {i}/{n} sobrepoe {name}"
 
 
 @pytest.mark.parametrize("n", range(1, HAND_MAX + 1))
@@ -91,7 +96,7 @@ def test_hit_test_da_mao_acerta_a_carta_certa(n):
 def test_clicar_fora_de_tudo_nao_devolve_elemento():
     assert L.hit_test((-5, -5), 5) is None
     assert L.hit_test((W + 10, H + 10), 5) is None
-    assert L.hit_test((L.PANEL_X + 2, L.info_rect().y + 2), 5) is None   # painel de info
+    assert L.hit_test((L.info_rect().x + 2, L.info_rect().y + 2), 5) is None   # painel de info
 
 
 def test_painel_final_so_responde_aos_botoes():
@@ -132,11 +137,11 @@ def test_janela_com_barras_centraliza_e_converte(scale, extra):
 
 
 @pytest.mark.parametrize("win", [(1920, 1080), (1920, 1000), (1440, 1200), (2560, 810),
-                                 (1000, 1000), (700, 300), (480, 270), (481, 271)])
+                                 (1000, 1000), (1700, 600), (960, 540), (961, 541)])
 def test_proporcoes_diferentes_usam_a_maior_escala_inteira_que_cabe(win):
     s, ox, oy = expected_transform(win)
     assert L.view_transform(win) == (s, ox, oy)
-    assert W * s <= win[0] and H * s <= win[1]
+    assert max(1, s) * W <= win[0] and max(1, s) * H <= win[1]
     assert W * (s + 1) > win[0] or H * (s + 1) > win[1]
     # imagem centralizada: sobra igual dos dois lados (diferenca de no maximo 1 px)
     assert abs(ox - (win[0] - W * s - ox)) <= 1

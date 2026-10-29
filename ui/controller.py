@@ -39,7 +39,6 @@ from core.types import (
 from ui import text as T
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-DECK_SIZE = 12
 DICE_TIME = 2.6
 AI_DELAY = 0.5
 LOG_MAX = 80
@@ -147,7 +146,7 @@ class Controller:
 
     def _deck(self, rng: Random, prefix: str) -> DeckSpec:
         cats = []
-        for i in range(DECK_SIZE):
+        for i in range(self.content.rules["duel"]["deck_size"]):
             cat = roll_cat(self.content, rng)
             cat.id = f"{prefix}{i + 1}"
             cats.append(cat)
@@ -295,7 +294,7 @@ class Controller:
             if slot is not None and slot in self.attackers:
                 return "ready", "Pode atacar"
             if fc.ready:
-                return "wait", "Ninguém pode atacar neste turno (quem começa não ataca no 1º)"
+                return "wait", "Ninguém pode atacar neste turno (quem começa não ataca no 1o turno)"
             return "new", "Acabou de entrar: não ataca neste turno"
         if fc.ready:
             return "ready", "Pode atacar"
@@ -323,29 +322,29 @@ class Controller:
 
     def hint(self) -> str:
         if self.confirming:
-            return "Ainda há jogadas. Passar mesmo assim? (E/Sim, ESC/Não)"
+            return "Passar mesmo assim? (E/ESC)"
         if self.phase == "dice":
-            return "Clique ou ESPAÇO para continuar"
+            return "Clique para continuar"
         if self.over:
             return "Fim do duelo"
         if self.duel.turn_side == "enemy":
-            return "Turno do inimigo... (segure ESPAÇO para acelerar)"
+            return "Turno do inimigo..."
         if not self.idle:
             return "..."
         card = self.sel_card()
         if self.sel and self.sel[0] == "enter":
-            return "Escolha o alvo do efeito ao entrar (destacado). ESC cancela"
+            return "Escolha o alvo (ESC)"
         if card is not None and card.kind == "effect":
             if self.needs_confirm():
-                return "Clique de novo na carta para usar o efeito (ESC cancela)"
-            return "Clique no alvo destacado para usar o efeito (ESC cancela)"
+                return "Clique de novo p/ usar"
+            return "Clique no alvo (ESC)"
         if self.sel and self.sel[0] == "hand":
-            return "Clique num slot vazio destacado para jogar (ESC cancela)"
+            return "Escolha um slot (ESC)"
         if self.sel:
-            return "Clique num alvo vermelho para atacar (ESC cancela)"
+            return "Escolha o alvo (ESC)"
         if self.pass_only:
-            return "Nada mais a fazer: passe o turno (E)"
-        return "Clique numa carta da mão ou num gato pronto (verde)"
+            return "Passe o turno (E)"
+        return "Escolha carta ou gato"
 
     # ------------------------------------------------------------ entrada
     def click(self, elem: tuple | None) -> None:
@@ -831,10 +830,10 @@ class Controller:
         sh = self.shown
         lines = [
             f"Turnos: você {sh.me.turns_taken}, inimigo {sh.opponent.turns_taken}",
-            f"Seu Líder: {sh.me.leader_hp}/{sh.me.leader_hp_max}    "
-            f"Líder inimigo: {sh.opponent.leader_hp}/{sh.opponent.leader_hp_max}",
-            f"Seus gatos perdidos: {self.stats['lost']}    Gatos inimigos derrotados: "
-            f"{self.stats['killed']}",
+            f"Seu Líder: {sh.me.leader_hp}/{sh.me.leader_hp_max} HP",
+            f"Líder inimigo: {sh.opponent.leader_hp}/{sh.opponent.leader_hp_max} HP",
+            f"Seus gatos perdidos: {self.stats['lost']}",
+            f"Gatos inimigos derrotados: {self.stats['killed']}",
         ]
         if self.stats["deadlock"]:
             lines.append("O duelo foi decidido no Impasse")

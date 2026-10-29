@@ -1,25 +1,39 @@
-"""Layout em coordenadas internas 480x270 e teste de clique (hit test)."""
+"""Layout do duelo em coordenadas internas 960x540 (W, H em ui/theme.py) e teste de clique.
+
+Geometria (a arte do tabuleiro final deve respeitar estes retangulos; ver reports/T8.2):
+    lider inimigo   y   2..58 (placa pintada x372..628, retrato 64x56 em x448)      campo inimigo  y  62..186      (5 cartas 120x124, passo 128)
+    campo jogador   y 194..318     lider jogador  y 322..378
+    faixa da mao    y 382..540     (cartas em y 398..522 + arco; nada mais invade esta faixa)
+    colunas laterais: esquerda x 4..156 (turno, info, registro, mensagem);
+                      direita x 804..956 (baralho inimigo, FIM DE TURNO, baralho, energia).
+"""
 from __future__ import annotations
 
 import pygame
 
 from ui.theme import H, W
 
-CARD_W, CARD_H = 62, 62
-PITCH = 64                       # distancia entre cartas
+CARD_W, CARD_H = 120, 124
+PITCH = 128                      # distancia entre cartas no campo
 SLOTS = 5
-FIELD_X = 4
-MAIN_W = (SLOTS - 1) * PITCH + CARD_W      # 318
-PANEL_X = FIELD_X + MAIN_W + 6              # 328
-PANEL_W = W - PANEL_X - 4                   # 148
+MAIN_W = (SLOTS - 1) * PITCH + CARD_W        # 632
+FIELD_X = (W - MAIN_W) // 2                  # 164
 
 ENEMY_LEADER_Y = 2
-ENEMY_FIELD_Y = 27
-PLAYER_FIELD_Y = 93
-PLAYER_LEADER_Y = 158
-LEADER_H = 22
-HAND_Y = 184
-BAR_Y = 250
+ENEMY_FIELD_Y = 62
+PLAYER_FIELD_Y = 194
+PLAYER_LEADER_Y = 322
+LEADER_W, LEADER_H = 64, 56      # recorte do retrato 64x64 no medalhao pintado (x448..511)
+CENTER_Y = (ENEMY_FIELD_Y + CARD_H + PLAYER_FIELD_Y) // 2   # 190: faixa entre os campos
+
+HAND_STRIP_Y = 382               # a faixa da mao comeca aqui (abaixo do lider do jogador)
+HAND_Y = 398                     # topo das cartas da mao (em repouso, centro do arco)
+HAND_X0, HAND_X1 = 12, 772       # a mao nunca passa de x=772 (energia/botoes ficam a direita)
+HAND_ARC = 8                     # as pontas da mao descem ate 8 px (leque)
+HOVER_RISE = 16                  # a carta em hover/selecionada sobe isto
+
+LEFT_X, LEFT_W = 6, 150          # recortes pintados em board_noturno.png (x6..155 / x802..955)
+RIGHT_X, RIGHT_W = 802, 154
 
 
 def slot_rect(side: str, n: int) -> pygame.Rect:
@@ -27,60 +41,129 @@ def slot_rect(side: str, n: int) -> pygame.Rect:
     return pygame.Rect(FIELD_X + n * PITCH, y, CARD_W, CARD_H)
 
 
+def field_rect(side: str) -> pygame.Rect:
+    """Faixa do campo (5 slots) de um lado."""
+    y = ENEMY_FIELD_Y if side == "enemy" else PLAYER_FIELD_Y
+    return pygame.Rect(FIELD_X, y, MAIN_W, CARD_H)
+
+
 def leader_rect(side: str) -> pygame.Rect:
+    """Retrato do Lider (alvo de clique), centrado no seu lado."""
     y = ENEMY_LEADER_Y if side == "enemy" else PLAYER_LEADER_Y
-    return pygame.Rect(FIELD_X, y, MAIN_W, LEADER_H)
+    return pygame.Rect(W // 2 - LEADER_W // 2, y, LEADER_W, LEADER_H)
+
+
+def leader_name_rect(side: str) -> pygame.Rect:
+    """Area do nome/regra do Lider: faixa a esquerda da placa pintada (que comeca em x=372)."""
+    r = leader_rect(side)
+    return pygame.Rect(FIELD_X, r.y, 372 - 8 - FIELD_X, r.h)
+
+
+def leader_hp_rect(side: str) -> pygame.Rect:
+    """Recorte 40x40 pintado para a gema de HP do Lider (x540..579)."""
+    r = leader_rect(side)
+    return pygame.Rect(540, r.y + 8, 40, 40)
+
+
+def leader_hp_center(side: str) -> tuple[int, int]:
+    return leader_hp_rect(side).center
+
+
+def leader_taunt_rect(side: str) -> pygame.Rect:
+    """Indicador de Provocar (escudo + texto) a direita da placa do Lider (x634..)."""
+    r = leader_rect(side)
+    return pygame.Rect(634, r.y + 8, 160, 40)
+
+
+def hand_pitch(n: int) -> int:
+    if n <= 1:
+        return PITCH
+    return min(PITCH, (HAND_X1 - HAND_X0 - CARD_W) // (n - 1))
 
 
 def hand_rect(i: int, n: int) -> pygame.Rect:
-    total = (n - 1) * PITCH + CARD_W
-    x0 = (W - total) // 2
-    return pygame.Rect(x0 + i * PITCH, HAND_Y, CARD_W, CARD_H)
+    """Carta `i` da mao de `n` (leque: pontas um pouco mais baixas). Cabe sempre em [12, 772]."""
+    pitch = hand_pitch(n)
+    total = (n - 1) * pitch + CARD_W
+    x0 = HAND_X0 + (HAND_X1 - HAND_X0 - total) // 2
+    k = 0.0 if n <= 1 else (2.0 * i / (n - 1) - 1.0)
+    return pygame.Rect(x0 + i * pitch, HAND_Y + round(HAND_ARC * k * k), CARD_W, CARD_H)
+
+
+def hand_hit_rect(i: int, n: int) -> pygame.Rect:
+    """Area de clique/hover da carta da mao: inclui a subida do hover (sem tremer na borda)."""
+    r = hand_rect(i, n)
+    return pygame.Rect(r.x, r.y - HOVER_RISE, r.w, r.h + HOVER_RISE)
 
 
 def pass_rect() -> pygame.Rect:
-    return pygame.Rect(PANEL_X, 156, PANEL_W, 26)
+    """Botao FIM DE TURNO (lateral direita, na altura da faixa entre os campos)."""
+    return pygame.Rect(RIGHT_X + 1, CENTER_Y - 32, 152, 64)
 
 
 def pass_yes_rect() -> pygame.Rect:
     r = pass_rect()
-    return pygame.Rect(r.x, r.y, r.w * 3 // 5 - 1, r.h)
+    return pygame.Rect(r.x, r.y, r.w * 3 // 5 - 2, r.h)
 
 
 def pass_no_rect() -> pygame.Rect:
     r = pass_rect()
     y = pass_yes_rect()
-    return pygame.Rect(y.right + 2, r.y, r.right - y.right - 2, r.h)
+    return pygame.Rect(y.right + 4, r.y, r.right - y.right - 4, r.h)
 
 
 def turn_rect() -> pygame.Rect:
-    return pygame.Rect(PANEL_X, 2, PANEL_W, 22)
+    return pygame.Rect(LEFT_X, 6, LEFT_W, 40)
 
 
 def info_rect() -> pygame.Rect:
-    return pygame.Rect(PANEL_X, 27, PANEL_W, 34)
+    return pygame.Rect(LEFT_X, 50, LEFT_W, 50)
 
 
 def log_rect() -> pygame.Rect:
-    return pygame.Rect(PANEL_X, 64, PANEL_W, 90)
-
-
-def energy_rect() -> pygame.Rect:
-    return pygame.Rect(4, BAR_Y, 150, 18)
+    return pygame.Rect(LEFT_X, 104, LEFT_W, 228)
 
 
 def message_rect() -> pygame.Rect:
-    return pygame.Rect(160, BAR_Y, W - 164, 18)
+    return pygame.Rect(LEFT_X, 336, LEFT_W, 42)
+
+
+def enemy_pile_rect() -> pygame.Rect:
+    """Baralho/mao do inimigo (canto superior direito, recorte pintado y6..85)."""
+    return pygame.Rect(RIGHT_X, 6, RIGHT_W, 80)
+
+
+def pile_rect() -> pygame.Rect:
+    """Baralho do jogador com contador (recorte pintado y390..477)."""
+    return pygame.Rect(RIGHT_X, 390, RIGHT_W, 88)
+
+
+def energy_rect() -> pygame.Rect:
+    """Faixa de energia (canto inferior direito, recorte pintado x778..955; gemas ate 7)."""
+    return pygame.Rect(778, 486, 178, 50)
+
+
+def toast_rect(width: int) -> pygame.Rect:
+    """Faixa de aviso do duelo: centralizada na faixa entre os campos."""
+    r = pygame.Rect(0, 0, width, 30)
+    r.center = (W // 2, CENTER_Y)
+    return r
 
 
 def final_panel() -> pygame.Rect:
-    return pygame.Rect(80, 36, 320, 198)
+    return pygame.Rect(180, 60, 600, 420)
 
 
 def final_buttons() -> dict[str, pygame.Rect]:
     p = final_panel()
-    return {"again": pygame.Rect(p.x + 12, p.bottom - 34, 132, 24),
-            "repeat": pygame.Rect(p.right - 144, p.bottom - 34, 132, 24)}
+    return {"again": pygame.Rect(p.x + 24, p.bottom - 64, 260, 44),
+            "repeat": pygame.Rect(p.right - 284, p.bottom - 64, 260, 44)}
+
+
+def continue_rect() -> pygame.Rect:
+    """Botao CONTINUAR do painel final do duelo dentro da run."""
+    p = final_panel()
+    return pygame.Rect(p.centerx - 130, p.bottom - 64, 260, 44)
 
 
 def hit_test(pos: tuple[int, int], n_hand: int, *, final: bool = False,
@@ -105,7 +188,7 @@ def hit_test(pos: tuple[int, int], n_hand: int, *, final: bool = False,
             if slot_rect(side, n).collidepoint(pos):
                 return ("slot", side, n)
     for i in range(n_hand - 1, -1, -1):
-        if hand_rect(i, n_hand).collidepoint(pos):
+        if hand_hit_rect(i, n_hand).collidepoint(pos):
             return ("hand", i)
     return None
 

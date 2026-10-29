@@ -11,7 +11,7 @@ from random import Random
 
 from ui.__main__ import main
 
-TELAS = ("duelo", "run", "mapa", "draft", "elite1", "elite2", "descanso", "fimrun",
+TELAS = ("duelo", "run", "mapa", "draft", "elite1", "elite2", "descanso", "fimrun", "abandonar",
          "menu", "colecao", "colecao_deck", "renomear", "adocao", "adocao_vazia", "doar_confirmar",
          "criatorio", "criatorio_casal", "criatorio_recusado", "novidades")
 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=None)
     a = ap.parse_args(sys.argv[2:])
-    if tela in TELAS[8:]:
+    if tela in TELAS[9:]:
         from ui.app_hub import run as run_hub
         asyncio.run(run_hub(a.seed if a.seed is not None else Random().randrange(1, 10**6), None, tela))
         sys.exit(0)
