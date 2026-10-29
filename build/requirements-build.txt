@@ -1,0 +1,6 @@
+# Dependencias SOMENTE de empacotamento (nunca vao para o requirements.txt do jogo).
+# Instale num venv fora do repo (ver build/README.md).
+pygame-ce>=2.5          # runtime do jogo
+jsonschema>=4.20        # runtime do jogo (core/content.py valida o JSON ao carregar)
+pyinstaller>=6.10       # executavel de PC (Windows/Steam)
+pygbag>=0.9             # pacote para navegador (WebAssembly)
