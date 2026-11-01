@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pygame
 
-from ui import audio, layout as L, scenes, scenes_novas, widgets as Wd
+from ui import audio, errors, layout as L, scenes, scenes_clareza, scenes_novas, widgets as Wd
+from ui.shell import Shell
 from ui.controller import Controller, load_game_content
 from ui.render import UIState, draw_frame
 from ui.theme import H, W
@@ -29,7 +30,9 @@ def make_controller(seed: int, enemy: str | None = None) -> Controller:
 
 def screenshot(path: str, seed: int, scene: str, enemy: str | None = None) -> None:
     pygame.init()
-    if scene in scenes_novas.NEW_SCENES:
+    if scene in scenes_clareza.SCENES:
+        ctrl, ui = scenes_clareza.setup(seed, scene, enemy)
+    elif scene in scenes_novas.NEW_SCENES:
         ctrl = scenes_novas.make(seed, scene, enemy)
         if ctrl is None:
             raise SystemExit(f"não consegui montar a cena {scene} com seed {seed}")
@@ -45,10 +48,15 @@ def screenshot(path: str, seed: int, scene: str, enemy: str | None = None) -> No
 
 
 async def run(seed: int, enemy: str | None = None) -> None:
+    await errors.guarded(_run(seed, enemy), "duelo")
+
+
+async def _run(seed: int, enemy: str | None = None) -> None:
     pygame.init()
     audio.setup()
     hover = audio.HoverSound()
     disp = Display("duelo de teste")
+    shell = Shell(disp)
     clock = pygame.time.Clock()
     ctrl = make_controller(seed, enemy)
     canvas = pygame.Surface((W, H))
@@ -68,16 +76,15 @@ async def run(seed: int, enemy: str | None = None) -> None:
             audio.on_event(ev)
             if ev.type == pygame.QUIT:
                 running = False
-            elif disp.handle_key(ev):
-                pass
-            elif ev.type == pygame.KEYDOWN and audio.handle_key(ev.key):
+            elif shell.handle(ev):
                 pass
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
-                    ctrl.cancel()
+                    if not ctrl.escape():
+                        shell.open_pause()
                     ui.drag = None
                 elif ev.key == pygame.K_SPACE:
-                    ctrl.skip()
+                    ctrl.space_key()
                 elif ev.key == pygame.K_e:
                     ctrl.request_end_turn()
                 elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER) and ctrl.final_visible:
@@ -111,13 +118,20 @@ async def run(seed: int, enemy: str | None = None) -> None:
                 elif press is not None and elem == press[0]:
                     ctrl.click(elem)
                 press = None
-        ctrl.speed = 6.0 if pygame.key.get_pressed()[pygame.K_SPACE] else 1.0
-        ctrl.update(dt)
+        if shell.take_action() == "quit":
+            running = False
+        shell.sync(ui)
+        ctrl.enemy_speed = ui.enemy_speed
+        if not shell.paused:                         # pausa: nem turno, nem animacao, nem relogio
+            ctrl.speed = 6.0 if pygame.key.get_pressed()[pygame.K_SPACE] else 1.0
+            ctrl.update(dt)
+            ui.t += dt
         audio.music("duelo_chefe" if ctrl.enemy and ctrl.enemy.get("tipo") == "chefe" else "duelo")
         audio.update(dt)
-        ui.t += dt
+        shell.tick(dt)
         draw_frame(canvas, ctrl, ui)
         Wd.mute_badge(canvas)
+        shell.finish(canvas, "duelo")
         disp.render(canvas)
         pygame.display.flip()
         await asyncio.sleep(0)

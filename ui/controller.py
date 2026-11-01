@@ -36,18 +36,19 @@ from core.types import (
     EffectPlayed, EndTurn, EnergyChanged, FieldCat, Healed, IllegalAction, LeaderDamaged,
     LeaderHealed, PlayCat, PlayEffect, TurnStarted,
 )
-from ui import audio, text as T
+from ui import anim, audio, text as T, timing as timing_mod
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DICE_TIME = 2.6
 AI_DELAY = 0.5
+INTRO_TIME = 2.4          # padrao da entrada do chefe; o valor real e `boss_intro.duration`
 LOG_MAX = 80
 
 
 @dataclass
 class Fx:
     """Efeito visual de vida curta. `slot=None` = Lider."""
-    kind: str                 # float | flash | line | die | enter
+    kind: str                 # float | flash | lunge | die | poof | enter | draw | play | gems
     side: str
     slot: int | None
     life: float
@@ -57,6 +58,31 @@ class Fx:
     to_side: str | None = None
     to_slot: int | None = None
     age: float = 0.0
+    amount: int = 0           # numero mostrado (dano/cura), p/ estilo do numero
+    data: Any = None          # dados extras do efeito (origem da carta, energia...)
+
+
+class LogLine(tuple):
+    """Linha do registro: desempacota como (texto, lado); `icon` (attack|damage|heal|skull|None)
+    e so para o desenho."""
+    icon: str | None
+
+    def __new__(cls, text: str, side: str, icon: str | None = None) -> "LogLine":
+        obj = super().__new__(cls, (text, side))
+        obj.icon = icon
+        return obj
+
+
+def _log_icon(ev: Any) -> str | None:
+    if isinstance(ev, Attacked):
+        return "attack"
+    if isinstance(ev, (DamageDealt, LeaderDamaged)):
+        return "damage"
+    if isinstance(ev, (Healed, LeaderHealed)):
+        return "heal"
+    if isinstance(ev, CatDied):
+        return "skull"
+    return None
 
 
 @dataclass
@@ -80,7 +106,7 @@ class Controller:
     def __init__(self, content: Content, seed: int, *, ai_delay: float = AI_DELAY,
                  seed_source: Callable[[], int] | None = None, enemy_id: str | None = None,
                  enemy_random: bool = False, player_spec: DeckSpec | None = None,
-                 duel: Duel | None = None) -> None:
+                 duel: Duel | None = None, timing: timing_mod.Timing | None = None) -> None:
         """`enemy_id` None = duelo antigo (dois decks sorteados); com id usa
         `new_duel_vs_enemy`. `enemy_random` sorteia o inimigo a cada partida (pelo seed).
         `player_spec` fixa o deck do jogador (cenas/testes). `duel` usa um duelo ja criado
@@ -95,6 +121,8 @@ class Controller:
         self.player_spec = player_spec
         self.seed_source = seed_source or (lambda: Random().randrange(1, 10**6))
         self.speed = 1.0
+        self.timing = timing or timing_mod.current()
+        self.enemy_speed: str = self.timing.enemy_speed.default   # chave de enemy_speed.options
         self.new_game(seed)
 
     # ------------------------------------------------------------ partida
@@ -119,9 +147,16 @@ class Controller:
         self.cur: Beat | None = None
         self.beat_t = 0.0
         self.fx: list[Fx] = []
-        self.log: list[tuple[str, str]] = []
+        self.log: list[LogLine] = []
+        self.rev = 0                                  # muda a cada acao (chave do cache da previa)
+        self.pv_cache: tuple | None = None
         self.toast: Toast | None = None
         self.banner: tuple[list[str], float] | None = None
+        self.banner_total = 0.0
+        self.hitstop_t = 0.0
+        self.shake: tuple[float, float] | None = None   # (amplitude, duracao)
+        self.shake_age = 0.0
+        self.intro_t: float | None = 0.0 if self._is_boss() else None
         self.sel: tuple | None = None
         self.sel_targets: list[tuple] = []
         self.confirming = False
@@ -178,6 +213,18 @@ class Controller:
         self.sel = None
         self.sel_targets = []
         self.confirming = False
+
+    def intro_time(self) -> float:
+        """Duracao da entrada do chefe (`boss_intro.duration`; padrao 2.4)."""
+        try:
+            return float(self.timing.boss_intro.duration)
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return INTRO_TIME
+
+    @property
+    def intro(self) -> bool:
+        """Entrada do chefe em curso (acontece antes do dado; clique/tecla pula)."""
+        return self.phase == "dice" and self.intro_t is not None
 
     @property
     def idle(self) -> bool:
@@ -261,6 +308,24 @@ class Controller:
             return None
         return "ALVO" if self.effect_plan(card)[0] == side else None
 
+    def target_blocked(self, side: str, n: int) -> str | None:
+        """Gato que NAO pode ser escolhido agora: "taunt" (Provocar na frente), "dim" ou None."""
+        if ("slot", n) in self.sel_targets:
+            return None
+        if self.sel and self.sel[0] == "slot":
+            if side != "enemy":
+                return None
+            return "taunt" if self.taunt_in_way() else "dim"
+        card = self.sel_card()
+        if card is not None and self.targeting() and self.effect_plan(card)[0] == side:
+            return "dim"
+        return None
+
+    def leader_blocked(self, side: str) -> bool:
+        """Lider inimigo protegido por Provocar enquanto um gato seu esta selecionado."""
+        return (side == "enemy" and bool(self.sel) and self.sel[0] == "slot"
+                and ("leader",) not in self.sel_targets)
+
     def leader_target(self, side: str) -> str | None:
         """"attack", "effect" ou None: o Lider de `side` e alvo valido agora?"""
         if ("leader",) not in self.sel_targets:
@@ -314,8 +379,8 @@ class Controller:
         if kind == "error":
             audio.sfx("ui_denied")
 
-    def _log(self, text: str, side: str) -> None:
-        self.log.append((text, side))
+    def _log(self, text: str, side: str, icon: str | None = None) -> None:
+        self.log.append(LogLine(text, side, icon))
         del self.log[:-LOG_MAX]
 
     def has_other_moves(self) -> bool:
@@ -345,11 +410,14 @@ class Controller:
         if self.sel:
             return "Escolha o alvo (ESC)"
         if self.pass_only:
-            return "Passe o turno (E)"
+            return "Passe o turno (E/ESPAÇO)"
         return "Escolha carta ou gato"
 
     # ------------------------------------------------------------ entrada
     def click(self, elem: tuple | None) -> None:
+        if self.intro:
+            self.intro_t = None
+            return
         if self.phase == "dice":
             self.dismiss_dice()
             return
@@ -363,8 +431,8 @@ class Controller:
                     self.repeat()
             return
         if not self.can_act():
-            if elem and elem[0] != "none":
-                self.say("Aguarde: é o turno do inimigo", "info", 1.2)
+            if self.shown.turn_side == "enemy" or not self.idle:
+                self.skip()                        # clique acelera a jogada atual
             return
         before = self.sel
         self._click_play(elem)
@@ -420,6 +488,21 @@ class Controller:
         self.sel = None
         self.sel_targets = []
         self.confirming = False
+
+    def escape(self) -> bool:
+        """ESC: cancela selecao/confirmacao. False = nada a cancelar (a UI abre a pausa)."""
+        if self.sel is not None or self.confirming:
+            self.cancel()
+            return True
+        return False
+
+    def space_key(self) -> None:
+        """ESPACO: passa o turno quando e a vez do jogador (com a confirmacao de sempre se ainda
+        ha jogada); fora disso pula o passo atual (dado, animacao, espera da IA)."""
+        if self.can_act():
+            self.request_end_turn()
+        else:
+            self.skip()
 
     def draggable(self, elem: tuple | None) -> bool:
         """Se `elem` pode virar origem de arrastar (carta jogavel ou gato que ataca)."""
@@ -585,6 +668,7 @@ class Controller:
             self.cancel()
             return False
         self._dirty = True
+        self.rev += 1
         self.confirming = False
         self.sel = None
         self.sel_targets = []
@@ -592,8 +676,17 @@ class Controller:
         return True
 
     # ------------------------------------------------------------ fila de beats
-    _DUR = {"Attacked": 0.34, "CatPlayed": 0.4, "EffectPlayed": 0.4, "result": 0.55,
-            "heal": 0.45, "buff": 0.45, "turn": 0.4, "Deadlock": 2.6, "deadhit": 0.6, "DuelEnded": 0.3}
+    def _dur(self, kind: str) -> float:
+        """Duracao do beat (de ui_timing.json). Ataque: dura ate o impacto da investida, para o
+        dano aparecer no momento em que a carta bate (a volta continua como efeito)."""
+        beats = self.timing.beats
+        d = beats.get(kind, beats["default"])
+        if kind == "Attacked":
+            return min(d, anim.impact_time(self.timing.lunge.duration))
+        return d
+
+    def _is_boss(self) -> bool:
+        return bool(self.enemy and self.enemy.get("tipo") == "chefe")
 
     def _kind(self, ev: Any, dead: bool) -> str:
         if isinstance(ev, (DamageDealt, CatDied)):
@@ -624,7 +717,7 @@ class Controller:
             else:
                 groups.append((k, [ev]))
         for k, evs in groups:
-            self.beats.append(Beat(evs, self._DUR.get(k, 0.3)))
+            self.beats.append(Beat(evs, self._dur(k)))
 
     def _begin(self, beat: Beat) -> None:
         self.cur = beat
@@ -632,11 +725,37 @@ class Controller:
         for ev in beat.events:
             line = T.describe(ev, self.shown)
             if line:
-                self._log(*line)
+                self._log(*line, icon=_log_icon(ev))
             starting = any(isinstance(e, TurnStarted) for e in beat.events)
             self._fx_for(ev, starting=starting)
             self._sfx_for(ev, starting)
             self._apply_shown(ev)
+        self._impact_feedback(beat.events)
+
+    def _impact_feedback(self, events: list) -> None:
+        """Pausa no impacto e tremor de tela do beat (so cosmetico; o estado ja foi aplicado)."""
+        tm = self.timing
+        leader = [e for e in events if isinstance(e, LeaderDamaged)]
+        lethal = (any(isinstance(e, CatDied) for e in events)
+                  or any(e.hp_left <= 0 for e in leader))
+        if lethal:
+            self.hitstop_t = tm.hitstop.lethal
+            self._start_shake(tm.shake.lethal)
+        elif leader:
+            self.hitstop_t = tm.hitstop.leader
+            self._start_shake(tm.shake.leader_hit)
+        elif any(isinstance(e, DamageDealt) for e in events):
+            self.hitstop_t = tm.hitstop.normal
+
+    def _start_shake(self, spec: Any) -> None:
+        cur = self.shake
+        if cur is None or self.shake_age >= cur[1] or spec.amplitude >= cur[0]:
+            self.shake, self.shake_age = (spec.amplitude, spec.duration), 0.0
+
+    def shake_offset(self) -> tuple[int, int]:
+        if self.shake is None:
+            return 0, 0
+        return anim.shake_offset(self.shake[0], self.shake[1], self.shake_age)
 
     def _target_side(self, ev: EffectPlayed) -> tuple[str, int | None] | None:
         """(lado, slot|None) alvo de um EffectPlayed, so para destacar (exibicao)."""
@@ -663,34 +782,51 @@ class Controller:
         elif isinstance(ev, AtkBuffExpired):
             fx.append(Fx("float", ev.side, ev.slot, 0.8, text=f"-{ev.amount} ATK", color="dim"))
         elif isinstance(ev, EnergyChanged) and not starting:
-            gain = ev.energy - T.side_view(self.shown, ev.side).energy
+            prev = T.side_view(self.shown, ev.side).energy
+            gain = ev.energy - prev
             if gain > 0:
                 self._tag_fx(ev.side, "energy", f"+{gain} ENERGIA", "energy")
-        elif isinstance(ev, Drew) and not starting:
-            self._tag_fx(ev.side, "draw", "+1 CARTA", "good")
+            elif gain < 0 and ev.side == "player":
+                self._gems_fx("off", prev, ev.energy)
+        elif isinstance(ev, Drew):
+            if ev.side == "player":
+                fx.append(Fx("draw", "player", None, self.timing.hand.draw_slide, card=ev.card))
+            if not starting:
+                self._tag_fx(ev.side, "draw", "+1 CARTA", "good")
         if isinstance(ev, Attacked):
             foe = "enemy" if ev.side == "player" else "player"
-            fx.append(Fx("line", ev.side, ev.attacker_slot, 0.4, to_side=foe,
-                         to_slot=None if ev.target[0] == "leader" else ev.target[1]))
+            lg = self.timing.lunge
+            fx.append(Fx("lunge", ev.side, ev.attacker_slot, lg.duration, to_side=foe,
+                         to_slot=None if ev.target[0] == "leader" else ev.target[1],
+                         data=lg.reach))
         elif isinstance(ev, DamageDealt):
             fx.append(Fx("flash", ev.side, ev.slot, 0.32, color="bad"))
-            fx.append(Fx("float", ev.side, ev.slot, 0.95, text=f"-{ev.amount}", color="bad"))
+            fx.append(Fx("float", ev.side, ev.slot, self.timing.damage_number.life,
+                         text=f"-{ev.amount}", color="bad", amount=ev.amount))
         elif isinstance(ev, LeaderDamaged):
             fx.append(Fx("flash", ev.side, None, 0.36, color="bad"))
-            fx.append(Fx("float", ev.side, None, 1.0, text=f"-{ev.amount}", color="bad"))
+            fx.append(Fx("float", ev.side, None, self.timing.damage_number.life,
+                         text=f"-{ev.amount}", color="bad", amount=ev.amount))
         elif isinstance(ev, Healed):
             fx.append(Fx("flash", ev.side, ev.slot, 0.4, color="good"))
             fx.append(Fx("float", ev.side, ev.slot, 0.95, text=f"+{ev.amount}", color="good"))
         elif isinstance(ev, CatPlayed):
             fx.append(Fx("enter", ev.side, ev.slot, 0.4))
+            self._play_arc_fx(ev)
         elif isinstance(ev, CatDied):
             fx.append(Fx("die", ev.side, ev.slot, 0.5, card=ev.card))
+            fx.append(Fx("poof", ev.side, ev.slot, self.timing.poof.life, card=ev.card))
         elif isinstance(ev, DrawSkipped) and ev.side == "player":
             self.say("Mão cheia: a compra foi pulada", "warn", 3.5)
         elif isinstance(ev, TurnStarted):
             mine = ev.side == "player"
-            self.banner = (["SEU TURNO" if mine else "TURNO DO INIMIGO"], 0.9)
+            dur = self.timing.turn_banner.duration
+            self.banner = (["SEU TURNO" if mine else f"TURNO DE {self.enemy_name().upper()}"], dur)
+            self.banner_total = dur
+            if mine:
+                self._gems_fx("on", ev.energy, 0)
         elif isinstance(ev, Deadlock):
+            self.banner_total = 2.6
             self.banner = (["IMPASSE!", f"Poder dos Líderes: você {ev.powers['player']}, "
                             f"inimigo {ev.powers['enemy']}",
                             "Começa: " + ("você" if ev.first == "player" else "o inimigo")], 2.6)
@@ -722,6 +858,24 @@ class Controller:
         elif isinstance(ev, EnergyChanged) and not starting:
             if ev.energy > T.side_view(self.shown, ev.side).energy:
                 audio.sfx("energy_up")
+
+    def _play_arc_fx(self, ev: CatPlayed) -> None:
+        """Arco da carta jogada ate o slot. Do jogador: sai da posicao dela na mao (indice e
+        tamanho da mao antes da remocao); do inimigo: sai do baralho dele."""
+        origin = None
+        if ev.side == "player":
+            hand = self.shown.me.hand or []
+            idx = next((k for k, h in enumerate(hand) if h is ev.card), None)
+            if idx is None:
+                idx = next((k for k, h in enumerate(hand) if h.ref == ev.card.ref), None)
+            origin = None if idx is None else (idx, len(hand))
+        self.fx.append(Fx("play", ev.side, ev.slot, self.timing.hand.play_arc, card=ev.card,
+                          data=origin))
+
+    def _gems_fx(self, mode: str, a: int, b: int) -> None:
+        n = max(a, b)
+        life = self.timing.energy.gem_stagger * (n + 1) + 0.05
+        self.fx.append(Fx("gems", "player", None, life, color=mode, data=(a, b)))
 
     def _tag_fx(self, side: str, where: str, text: str, color: str) -> None:
         """Texto flutuante em posicao fixa; o render decide o retangulo por `card`=where."""
@@ -796,6 +950,7 @@ class Controller:
 
     # ------------------------------------------------------------ tempo
     def dismiss_dice(self) -> None:
+        self.intro_t = None
         if self.phase == "dice":
             self.phase = "play"
             self.ai_t = 0.0
@@ -803,9 +958,12 @@ class Controller:
 
     def skip(self) -> None:
         """ESPACO: pula o passo atual (dado, animacao ou espera da IA)."""
-        if self.phase == "dice":
+        if self.intro:
+            self.intro_t = None
+        elif self.phase == "dice":
             self.dismiss_dice()
         elif self.cur is not None:
+            self.hitstop_t = 0.0
             self.beat_t = self.cur.duration
         elif self.phase == "over":
             self.over_t = max(self.over_t, 0.8)
@@ -813,16 +971,26 @@ class Controller:
             self.ai_t = self.ai_delay
 
     def update(self, dt: float) -> None:
-        dt *= self.speed
-        for f in self.fx:
-            f.age += dt
-        self.fx = [f for f in self.fx if f.age < f.life]
+        dt *= self.speed * self.enemy_time_scale()
         if self.toast:
             self.toast.ttl -= dt
             if self.toast.ttl <= 0:
                 self.toast = None
         if self.banner:
             self.banner = (self.banner[0], self.banner[1] - dt) if self.banner[1] > dt else None
+        self.shake_age += dt
+        if self.intro:
+            self.intro_t += dt
+            if self.intro_t >= self.intro_time():
+                self.intro_t = None
+            return
+        frozen = self.hitstop_t > 0
+        dt = self._after_hitstop(dt)
+        for f in self.fx:
+            f.age += dt
+        self.fx = [f for f in self.fx if f.age < f.life]
+        if frozen and dt <= 0:
+            return
         if self.phase == "dice":
             self.dice_t += dt
             if self.dice_t >= DICE_TIME:
@@ -840,6 +1008,25 @@ class Controller:
             self._begin(self.beats.popleft())
             return
         self._idle(dt)
+
+    def enemy_time_scale(self) -> float:
+        """Fator do tempo no turno inimigo: 1/multiplicador de `enemy_speed.options[escolha]`
+        (0.5 = durações pela metade = 2x mais rapido). Escala beats, investida, hitstop, faixas e
+        a espera da IA; fora do turno inimigo (e no dado/fim) vale 1."""
+        if self.phase != "play" or self.shown.turn_side != "enemy":
+            return 1.0
+        mult = self.timing.enemy_speed.options.get(self.enemy_speed)
+        if not isinstance(mult, (int, float)) or mult <= 0:
+            return 1.0
+        return 1.0 / mult
+
+    def _after_hitstop(self, dt: float) -> float:
+        """Consome a pausa no impacto (congela beat e efeitos); devolve o tempo que sobrou."""
+        if self.hitstop_t <= 0:
+            return dt
+        used = min(dt, self.hitstop_t)
+        self.hitstop_t -= used
+        return dt - used
 
     def _idle(self, dt: float) -> None:
         d = self.duel

@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "beats": {
+    "Attacked": 0.34,
+    "CatPlayed": 0.4,
+    "EffectPlayed": 0.4,
+    "result": 0.55,
+    "heal": 0.45,
+    "buff": 0.45,
+    "turn": 0.4,
+    "Deadlock": 2.6,
+    "deadhit": 0.6,
+    "DuelEnded": 0.3,
+    "default": 0.3
+  },
+  "lunge": {
+    "duration": 0.25,
+    "reach": 0.85
+  },
+  "hitstop": {
+    "normal": 0.05,
+    "lethal": 0.08,
+    "leader": 0.07
+  },
+  "shake": {
+    "leader_hit": {
+      "amplitude": 3,
+      "duration": 0.18
+    },
+    "lethal": {
+      "amplitude": 5,
+      "duration": 0.25,
+      "intensity": 5
+    }
+  },
+  "damage_number": {
+    "pop_scale": 2.0,
+    "pop_time": 0.12,
+    "rise": 36,
+    "life": 0.95,
+    "big_threshold": 5,
+    "big_scale": 3
+  },
+  "poof": {
+    "particles": 14,
+    "life": 0.5,
+    "speed": 60
+  },
+  "hand": {
+    "draw_slide": 0.25,
+    "play_arc": 0.3,
+    "hover_lift": 14,
+    "hover_scale": 1.25,
+    "hover_spread": 10
+  },
+  "breathing": {
+    "amplitude": 1,
+    "period": 2.4
+  },
+  "turn_banner": {
+    "duration": 0.9
+  },
+  "boss_intro": {
+    "duration": 2.4
+  },
+  "energy": {
+    "gem_stagger": 0.06
+  },
+  "fade": {
+    "scene": 0.2
+  },
+  "enemy_speed": {
+    "options": {
+      "1x": 1.0,
+      "2x": 0.5,
+      "rapido": 0.2
+    },
+    "default": "1x"
+  }
+}

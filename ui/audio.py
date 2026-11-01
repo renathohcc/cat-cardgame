@@ -168,15 +168,28 @@ def read_prefs(path: Path | None) -> dict:
     return out
 
 
+def read_raw_prefs(path: Path | None) -> dict:
+    """Conteudo bruto do prefs.json (dict) ou {}: base para as chaves que nao sao de audio."""
+    if path is None:
+        return {}
+    try:
+        raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+    return raw if isinstance(raw, dict) else {}
+
+
 def write_prefs(path: Path | None, prefs: dict) -> bool:
-    """Escrita atomica (tmp + replace). Devolve False se nao deu (sem derrubar o jogo)."""
+    """Escrita atomica (tmp + replace). Mescla com o arquivo existente (preserva as chaves de
+    outras telas, ex.: opcoes). Devolve False se nao deu (sem derrubar o jogo)."""
     if path is None:
         return False
     path = Path(path)
     tmp = path.with_name(path.name + ".tmp")
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        tmp.write_text(json.dumps({"version": 1, **prefs}, indent=2), encoding="utf-8")
+        merged = {**read_raw_prefs(path), "version": 1, **prefs}
+        tmp.write_text(json.dumps(merged, indent=2), encoding="utf-8")
         os.replace(tmp, path)
         return True
     except Exception:  # noqa: BLE001

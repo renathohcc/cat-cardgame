@@ -21,7 +21,7 @@ from core import (SaveData, advance_after_run, create_adoption, has_pending_adop
                   read_save, write_save)
 from core import Content, breed_cfg
 from core.types import IllegalAction
-from ui import audio, layout_hub as LH
+from ui import audio, errors, layout_hub as LH
 from ui.adoption_controller import AdoptionController
 from ui.breed_controller import BreedController, NewsController
 from ui.collection_controller import CollectionController
@@ -65,6 +65,7 @@ class HubController:
         self.breed_from = "cercado"               # para onde o BREED volta
         self._pen_sync_clock = 0.0
         self.end_jingle = False                   # run acabou: toca o jingle ate o 1o clique
+        self.options_requested = False            # menu > OPCOES: o loop abre a tela de opcoes
         self.reload()
 
     # ------------------------------------------------------------ save
@@ -77,6 +78,7 @@ class HubController:
         try:
             self.save = read_save(self.save_path, self.content)
         except Exception as e:  # noqa: BLE001 - arquivo ilegivel/invalido: so avisar
+            errors.log_exception(e, "read_save")
             self.load_error = str(e) or type(e).__name__
 
     def persist(self) -> str | None:
@@ -87,6 +89,7 @@ class HubController:
             self.save_path.parent.mkdir(parents=True, exist_ok=True)
             write_save(self.save, self.save_path)
         except Exception as e:  # noqa: BLE001 - qualquer falha vira aviso, nunca derruba o jogo
+            errors.log_exception(e, "persist")
             return str(e) or type(e).__name__
         self.has_file = True
         return None
@@ -399,6 +402,9 @@ class HubController:
                 mgr.set_volume(elem[1], elem[2])
             audio.sfx("ui_click")
             return
+        if elem == ("menu_options",):
+            self.options_requested = True
+            return
         if not elem or elem[0] != "menu":
             return
         item = elem[1]
@@ -519,6 +525,29 @@ class HubController:
             self.enter_pen()
         elif m == "resultado":
             self.enter_pen()
+
+    def escape(self) -> bool:
+        """ESC do jogo: faz o que o ESC ja fazia (cancelar, fechar, voltar). False = nada a
+        cancelar no cercado/mapa/duelo/draft: a UI abre o menu de pausa."""
+        if self.mode == "run" and self.rc:
+            ok = self.rc.escape()
+            self._check_run_end()
+            return ok
+        if self.mode == "cercado":
+            col = self.col
+            if not (col.editing or col.confirm_donate or self.ficha):
+                return False
+        self.key_escape()
+        return True
+
+    def go_menu(self) -> None:
+        """Pausa > SAIR PARA O MENU (so no cercado; o save ja foi gravado)."""
+        if self.mode == "cercado":
+            self.close_ficha()
+            self.mode = "menu"
+
+    def scene_key(self) -> str:
+        return f"run_{self.rc.screen}" if self.mode == "run" and self.rc else self.mode
 
     def key_enter(self) -> None:
         m = self.mode

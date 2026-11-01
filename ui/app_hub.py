@@ -8,7 +8,8 @@ from pathlib import Path
 
 import pygame
 
-from ui import audio, layout as L, scenes_hub, widgets as Wd
+from ui import audio, errors, layout as L, scenes_hub, widgets as Wd
+from ui.shell import Shell
 from ui.app import DRAG_THRESHOLD
 from ui.display import Display
 from ui.controller import load_game_content
@@ -32,11 +33,20 @@ def screenshot(path: str, seed: int, scene: str, hora: str | None = None) -> Non
 async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str | None = None,
               hora: str | None = None) -> None:
     """`hora` ("HH:MM") fixa a hora do cercado; sem ela usa a hora do computador."""
+    await errors.guarded(_run(seed, save_path, scene, hora), "jogo")
+
+
+async def _run(seed: int, save_path: Path | str | None, scene: str | None, hora: str | None) -> None:
     pygame.init()
     audio.setup(legacy_dirs=(Path(save_path).parent,) if save_path else ())
     hover = audio.HoverSound()
     disp = Display()
+    shell = Shell(disp)
     clock = pygame.time.Clock()
+    overlay = {"pausa": ("criatorio_hub", "pause"), "opcoes": ("menu", "options")}.get(scene or "")
+    if overlay:                                  # demo: tela ja com a camada aberta
+        scene = overlay[0]
+        shell.open_pause(menu=True) if overlay[1] == "pause" else shell.open_options()
     if scene:
         hub, ui = scenes_hub.make(seed, scene, hora)
         ui.mouse = (-100, -100)
@@ -59,17 +69,16 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
             audio.on_event(ev)
             if ev.type == pygame.QUIT:
                 running = False
+            elif shell.handle(ev, hub.editing_text):
+                pass
             elif ev.type == pygame.TEXTINPUT:
                 hub.text_input(ev.text)
             elif ev.type == pygame.MOUSEWHEEL:
                 hub.scroll(-ev.y)
-            elif disp.handle_key(ev):
-                pass
-            elif ev.type == pygame.KEYDOWN and audio.handle_key(ev.key, hub.editing_text):
-                pass
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
-                    hub.key_escape()
+                    if not hub.escape():
+                        shell.open_pause(run=hub.mode == "run", menu=hub.mode == "cercado")
                     ui.drag = None
                 elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     hub.key_enter()
@@ -78,7 +87,7 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
                 elif ev.key in (pygame.K_UP, pygame.K_DOWN) and hub.mode == "colecao":
                     hub.scroll(-1 if ev.key == pygame.K_UP else 1)
                 elif duel is not None and ev.key == pygame.K_SPACE:
-                    duel.skip()
+                    duel.space_key()
                 elif duel is not None and ev.key == pygame.K_e:
                     duel.request_end_turn()
             elif ev.type == pygame.MOUSEBUTTONDOWN:
@@ -112,16 +121,32 @@ async def run(seed: int, save_path: Path | str | None = DEFAULT_SAVE, scene: str
                 elif press is not None and elem == press[0]:
                     hub.click(elem)
                 press = None
+        if hub.options_requested:
+            hub.options_requested = False
+            shell.open_options()
+        act = shell.take_action()
+        if act == "quit":
+            running = False
+        elif act == "menu":
+            hub.go_menu()
+        elif act == "abandon" and hub.rc is not None:
+            hub.rc.request_abandon()
         if hub.mode != "run":
             ui.drag = None
+        shell.sync(ui)
         if hub.rc is not None and hub.rc.duel_ctrl is not None:
-            hub.rc.duel_ctrl.speed = 6.0 if pygame.key.get_pressed()[pygame.K_SPACE] else 1.0
-        hub.update(dt)
+            hub.rc.duel_ctrl.enemy_speed = ui.enemy_speed
+            if not shell.paused:
+                hub.rc.duel_ctrl.speed = 6.0 if pygame.key.get_pressed()[pygame.K_SPACE] else 1.0
+        if not shell.paused:                         # pausa: nem turno, nem animacao, nem relogio
+            hub.update(dt)
+            ui.t += dt
         audio.music(hub.audio_context())
         audio.update(dt)
-        ui.t += dt
+        shell.tick(dt)
         draw_hub_frame(canvas, hub, ui)
         Wd.mute_badge(canvas)
+        shell.finish(canvas, hub.scene_key())
         disp.render(canvas)
         pygame.display.flip()
         await asyncio.sleep(0)

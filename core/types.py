@@ -292,6 +292,50 @@ class Duel:
     stall_triggered: bool = False
 
 
+# Previa (T12.1): resultado de uma acao antes de aplica-la, para a UI desenhar.
+@dataclass(frozen=True)
+class CatPreview:
+    """Gato afetado pela acao. `hp_after` >= 0 (0 = morre); `damage`/`heal` somados."""
+    side: str
+    slot: int
+    hp_before: int
+    hp_after: int
+    atk_before: int
+    atk_after: int     # ATK com buffs; vale ate o fim do turno se o buff for temporario
+    damage: int = 0
+    heal: int = 0
+    dies: bool = False
+
+
+@dataclass(frozen=True)
+class LeaderPreview:
+    side: str
+    hp_before: int
+    hp_after: int      # >= 0
+    damage: int = 0    # dano bruto (pode passar do HP restante)
+    heal: int = 0      # cura efetiva (ja limitada ao HP maximo)
+
+
+@dataclass(frozen=True)
+class Preview:
+    """Efeito direto de `action` (sem a resolucao de impasse, que e sorteada).
+
+    `cats`/`leaders` so trazem quem muda; `winner` = quem vence com esta acao;
+    `deadlock` = a acao dispara o impasse logo depois (resultado sorteado, nao previsto).
+    """
+    action: Any
+    cats: tuple[CatPreview, ...] = ()
+    leaders: tuple[LeaderPreview, ...] = ()
+    winner: str | None = None
+    deadlock: bool = False
+
+    def cat(self, side: str, slot: int) -> CatPreview | None:
+        return next((c for c in self.cats if c.side == side and c.slot == slot), None)
+
+    def leader(self, side: str) -> LeaderPreview | None:
+        return next((x for x in self.leaders if x.side == side), None)
+
+
 @dataclass
 class SideView:
     leader_hp: int

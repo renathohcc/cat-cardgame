@@ -24,6 +24,8 @@ def hover_elem(ctrl: Controller, mouse: tuple[int, int], dragging: bool = False)
         return None
     sh = ctrl.shown
     n_hand = len(sh.me.hand)
+    if L.rule_rect().collidepoint(mouse) and sh.opponent.rule:
+        return ("rule",)
     elem = L.hit_test(mouse, n_hand, confirm=ctrl.confirming)
     if elem is None:
         return None
@@ -118,6 +120,18 @@ def leader_tooltip(ctrl: Controller, side: str) -> list[list[Seg]] | None:
     return lines
 
 
+def rule_lines(ctrl: Controller) -> list[list[Seg]] | None:
+    """Tooltip do icone de regra propria: nome, de quem e o texto da regra."""
+    rule = ctrl.shown.opponent.rule
+    if not rule:
+        return None
+    who = ctrl.enemy["nome"] if ctrl.enemy else "Inimigo"
+    return [[(T.rule_name(rule), C["text"])],
+            [(f"Regra própria de {who}", C["warn"])],
+            [],
+            [("*wrap", T.rule_text(rule), C["text"])]]
+
+
 def wrap_lines(lines: list[list[Seg]], width: int = TIP_W) -> list[list[Seg]]:
     """Expande os segmentos "*wrap" em linhas que cabem em `width`."""
     out: list[list[Seg]] = []
@@ -134,6 +148,9 @@ def wrap_lines(lines: list[list[Seg]], width: int = TIP_W) -> list[list[Seg]]:
 def lines_for(ctrl: Controller, elem: tuple) -> tuple[list[list[Seg]], str, pygame.Rect] | None:
     """(linhas ja quebradas, lado, ancora) do elemento, ou None se nao ha o que mostrar."""
     sh = ctrl.shown
+    if elem[0] == "rule":
+        raw = rule_lines(ctrl)
+        return (wrap_lines(raw), "enemy", L.rule_rect()) if raw else None
     if elem[0] == "leader":
         raw = leader_tooltip(ctrl, elem[1])
         return (wrap_lines(raw), elem[1], L.leader_rect(elem[1])) if raw else None
@@ -174,7 +191,7 @@ def place(kind: str, anchor: pygame.Rect, h: int, w: int = TIP_W) -> pygame.Rect
         if y < MARGIN:                       # nao cabe acima: ao lado da carta
             x = anchor.right + 6 if anchor.right + 6 + w <= W - MARGIN else anchor.x - w - 6
             y = H - h - MARGIN
-    elif kind == "leader":
+    elif kind in ("leader", "rule"):
         x, y = anchor.x + 8, anchor.bottom + 8
     else:
         x = anchor.right + 8

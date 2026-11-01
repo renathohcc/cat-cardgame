@@ -199,10 +199,23 @@ def check_breed(rules: dict) -> int:
     return errors
 
 
+def check_ui_timing(docs: dict[str, dict]) -> int:
+    if "ui_timing" not in docs:
+        print("FALHA ui_timing: arquivo ausente ou inválido")
+        return 1
+    speed = docs["ui_timing"]["enemy_speed"]
+    if speed["default"] not in speed["options"]:
+        print(f"FALHA ui_timing: enemy_speed.default '{speed['default']}' não está em options")
+        return 1
+    print("ok ui_timing")
+    return 0
+
+
 def main() -> int:
     errors, docs = check_schemas()
     errors += check_cross_refs(docs)
     errors += check_run(docs)
+    errors += check_ui_timing(docs)
     return 1 if errors else 0
 
 

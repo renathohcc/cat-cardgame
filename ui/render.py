@@ -3,12 +3,12 @@ Paleta em theme.py; nao tem regra de jogo. `scale` de fonte: 1 = corpo (maiuscul
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pygame
 
 from core.types import Card, FieldCat
-from ui import sprites, font, skin, layout as L, text as T, tooltip as TIP
+from ui import anim, icons, sprites, font, skin, layout as L, text as T, timing as timing_mod, tooltip as TIP
 from ui.controller import Controller
 from ui.theme import (
     ART_BG, BREED_COLOR, C, DEFAULT_BREED_COLOR, EFFECT_BADGE, H, KEYWORD_BADGE, KEYWORD_COLOR,
@@ -23,6 +23,12 @@ class UIState:
     mouse: tuple[int, int] = (-100, -100)
     drag: tuple[tuple, tuple[int, int]] | None = None   # (elem origem, posicao)
     t: float = 0.0
+    screen_shake: bool = True                  # tremor de tela (a tela de opcoes liga/desliga)
+    hover_hand: int | None = None              # carta da mao em foco e desde quando (animacao)
+    hover_since: float = 0.0
+    # velocidade do turno inimigo: chave de enemy_speed.options (a tela de opcoes troca; os loops
+    # copiam para `Controller.enemy_speed`)
+    enemy_speed: str = field(default_factory=lambda: timing_mod.current().enemy_speed.default)
 
 
 # ------------------------------------------------------------------ primitivas
@@ -311,11 +317,19 @@ def _state_pill(surf: pygame.Surface, r: pygame.Rect, txt: str, col, h: int = 22
     font.draw(surf, font.fit(txt, pr.w - 8, sc), pr.centerx, pr.y + (h - font.CAP_H * sc) // 2, col, sc, "center")
 
 
+def _previewed(ctrl: Controller, ui: UIState, side: str, target: tuple) -> bool:
+    """O mouse esta neste alvo e a previa dele esta na tela."""
+    from ui import preview
+    return (preview.hovered(ctrl, ui.mouse) == (side, target)
+            and preview.current(ctrl, ui.mouse) is not None)
+
+
 def draw_field_cat(surf: pygame.Surface, ctrl: Controller, side: str, n: int, ui: UIState,
-                   *, hidden_fx: bool = False) -> None:
+                   off: tuple[int, int] = (0, 0)) -> None:
+    """`off` = deslocamento da respiracao/investida (so o desenho; o clique usa o slot)."""
     sv = T.side_view(ctrl.shown, side)
     fc: FieldCat = sv.field[n]
-    r = L.slot_rect(side, n)
+    r = L.slot_rect(side, n).move(off)
     draw_card(surf, r, fc.card, fc.atk, fc.hp, fc.hp_max, fc.keywords, enemy=side == "enemy",
               atk_bonus=fc.atk_bonus_turn)
     status, _ = ctrl.cat_status(side, fc)
@@ -334,7 +348,12 @@ def draw_field_cat(surf: pygame.Surface, ctrl: Controller, side: str, n: int, ui
         col = C["target"] if side == "enemy" else C["drop"]
         tint(surf, r, col, 50 + int(60 * pulse(ui.t)))
         border(surf, r.inflate(8, 8), col, 3)
-        _state_pill(surf, r, label, (255, 255, 255), 26)
+        if not _previewed(ctrl, ui, side, ("slot", n)):     # a previa ocupa o lugar do rotulo
+            _state_pill(surf, r, label, (255, 255, 255), 26)
+    blocked = ctrl.target_blocked(side, n)
+    if blocked:                                  # nao e alvo valido: apagado (escudo se Provocar)
+        from ui import render_preview
+        render_preview.draw_blocked_cat(surf, ctrl, side, n, blocked)
 
 
 def draw_spirit_ghost(surf: pygame.Surface, card: Card, r: pygame.Rect) -> None:
@@ -397,12 +416,33 @@ def draw_taunt_mark(surf: pygame.Surface, ctrl: Controller, side: str) -> None:
     font.draw(surf, "PROVOCAR", r.x + 42, r.y + 22, C["taunt"], 1)
 
 
+def rule_icon(rule: dict) -> str | None:
+    """Nome do icone da regra propria (do tipo da acao); None cai na letra do badge."""
+    act = rule.get("acao", rule.get("acoes"))
+    if isinstance(act, list):
+        act = act[0] if act else None
+    tipo = act.get("tipo") if isinstance(act, dict) else None
+    return f"acao-{tipo}" if tipo else None
+
+
+def draw_rule_badge(surf: pygame.Surface, rule: dict, ui: UIState) -> None:
+    """Icone da regra propria ao lado do retrato do inimigo (o tooltip explica a regra)."""
+    r = L.rule_rect()
+    badge(surf, r.x, r.y, (rule_icon(rule), C["warn"], "R"))
+    border(surf, r.inflate(2, 2), C["warn"] if pulse(ui.t, 3) > 0.5 else mix_c(C["warn"], DARK, 0.5), 1)
+
+
 def draw_leader(surf: pygame.Surface, ctrl: Controller, side: str, ui: UIState) -> None:
     r = L.leader_rect(side)
     sv = T.side_view(ctrl.shown, side)
     name_r = L.leader_name_rect(side)
     draw_leader_portrait(surf, ctrl, side, r)
     draw_taunt_mark(surf, ctrl, side)
+    if ctrl.leader_blocked(side):
+        from ui import render_preview
+        render_preview.draw_blocked_leader(surf, side)
+    if side == "enemy" and sv.rule:
+        draw_rule_badge(surf, sv.rule, ui)
     tgt = ctrl.leader_target(side)
     cat_sel = side == "enemy" and ctrl.sel and ctrl.sel[0] == "slot"
     person = ctrl.enemy if side == "enemy" else None
@@ -444,45 +484,6 @@ def draw_leader(surf: pygame.Surface, ctrl: Controller, side: str, ui: UIState) 
         tint(surf, hp.inflate(-8, -8), (255, 60, 40), 90)
     font.draw(surf, str(sv.leader_hp), hp.centerx, hp.centery - font.CAP_H // 2, (255, 255, 255), 1, "center")
     font.draw(surf, f"/{sv.leader_hp_max}", hp.right + 6, hp.centery - font.CAP_H // 2, C["dim"], 1, "left")
-
-
-# ------------------------------------------------------------------ mao
-def draw_hand(surf: pygame.Surface, ctrl: Controller, ui: UIState, hover: tuple | None = None) -> int | None:
-    """Desenha a mao em leque; devolve o indice da carta arrastada (para nao duplicar).
-    A carta em hover/selecionada sobe e cresce um pouco (desenhada por cima)."""
-    hand = ctrl.shown.me.hand
-    n = len(hand)
-    dragging = ui.drag[0][1] if ui.drag and ui.drag[0][0] == "hand" else None
-    hov_i = hover[1] if hover and hover[0] == "hand" else None
-    sel_i = ctrl.sel[1] if ctrl.sel and ctrl.sel[0] == "hand" else None
-    order = [i for i in range(n) if i not in (hov_i, sel_i)]
-    for i in (hov_i, sel_i):                      # hover/selecionada por cima das outras
-        if i is not None and i < n and i not in order:
-            order.append(i)
-    done: set[int] = set()
-    for i in order:
-        if i == dragging or i in done:
-            continue
-        done.add(i)
-        card = hand[i]
-        r = L.hand_rect(i, n)
-        sel = ctrl.sel == ("hand", i)
-        ok, why = ctrl.hand_state(i)
-        if sel or i == hov_i:
-            r = r.move(0, -L.HOVER_RISE).inflate(8, 8)
-        draw_card(surf, r, card, card.atk, card.hp, card.hp, card.keywords)
-        if not ok:
-            tint(surf, r, DARK, 140)   # so escurece; o motivo aparece no toast ao clicar
-        elif ctrl.can_act():
-            border(surf, r, C["ready"], 2)
-        if sel:
-            border(surf, r.inflate(6, 6), C["select"], 3)
-            if ctrl.needs_confirm():
-                pr = pygame.Rect(r.x + 6, r.y + 32, r.w - 12, 38)
-                pill(surf, pr, 235)
-                font.draw(surf, "CLIQUE DE", r.centerx, pr.y + 5, (255, 255, 255), 1, "center")
-                font.draw(surf, "NOVO", r.centerx, pr.y + 22, C["warn"], 1, "center")
-    return dragging
 
 
 # ------------------------------------------------------------------ painel
@@ -533,22 +534,35 @@ def draw_pile(surf: pygame.Surface, r: pygame.Rect, deck: int, hand: int, side: 
 
 _LOG_COLOR = {"player": C["player"], "enemy": (255, 160, 160), "warn": C["warn"],
               "good": C["good"], "bad": C["bad"]}
-LOG_LINE = 13
+LOG_LINE = 14
+LOG_ICON_W = 18                # icone 16x16 + folga antes do texto
+
+
+def log_rows(ctrl: Controller, width: int, cap: int) -> list[tuple[str, tuple, str | None, bool]]:
+    """Ultimas linhas do registro ja quebradas: (texto, cor, icone na 1a linha, recuado)."""
+    rows: list[tuple[str, tuple, str | None, bool]] = []
+    for entry in reversed(ctrl.log[-20:]):               # do mais novo para o mais antigo
+        txt, side = entry
+        icon = getattr(entry, "icon", None)
+        col = _LOG_COLOR.get(side, C["text"])
+        lines = font.wrap(txt, width - (LOG_ICON_W if icon else 0))
+        if len(rows) + len(lines) > cap:
+            break
+        rows = [(ln if icon or k == 0 else " " + ln, col, icon if k == 0 else None, bool(icon))
+                for k, ln in enumerate(lines)] + rows
+    return rows
 
 
 def draw_log(surf: pygame.Surface, ctrl: Controller) -> None:
     r = L.log_rect()
     font.draw(surf, "REGISTRO", r.x + 8, r.y + 6, C["dim"])
     cap = (r.h - 26) // LOG_LINE
-    rows: list[tuple[str, tuple]] = []
-    for txt, side in reversed(ctrl.log[-20:]):           # do mais novo para o mais antigo
-        col = _LOG_COLOR.get(side, C["text"])
-        lines = font.wrap(txt, r.w - 18)
-        if len(rows) + len(lines) > cap:
-            break
-        rows = [(ln if k == 0 else " " + ln, col) for k, ln in enumerate(lines)] + rows
-    for k, (ln, col) in enumerate(rows):
-        font.draw(surf, ln, r.x + 8, r.y + 24 + k * LOG_LINE, col)
+    for k, (ln, col, icon, indent) in enumerate(log_rows(ctrl, r.w - 18, cap)):
+        y = r.y + 24 + k * LOG_LINE
+        ico = icons.get(icon) if icon else None
+        if ico is not None:
+            surf.blit(ico, (r.x + 6, y - 3))
+        font.draw(surf, ln, r.x + 8 + (LOG_ICON_W if indent else 0), y, col)
 
 
 def draw_pass_button(surf: pygame.Surface, ctrl: Controller, ui: UIState) -> None:
@@ -565,21 +579,36 @@ def draw_pass_button(surf: pygame.Surface, ctrl: Controller, ui: UIState) -> Non
             font.draw(surf, txt, rect.centerx, rect.centery - font.CAP_H // 2, (255, 255, 255), 1, "center")
         return
     hot = active and r.collidepoint(ui.mouse)
-    glow = ctrl.pass_only and pulse(ui.t, 7) > 0.5
-    name = "botao_fim_turno_" + ("desabilitado" if not active else "hover" if (hot or glow) else "normal")
+    calm = ctrl.pass_only                                # so resta passar: o botao respira
+    name = "botao_fim_turno_" + ("desabilitado" if not active else "hover" if hot else "normal")
     if not skin.nine(surf, name, r):
-        fill = C["button_off"] if not active else C["button_hot"] if (hot or glow) else C["button"]
+        fill = C["button_off"] if not active else C["button_hot"] if hot else C["button"]
         pygame.draw.rect(surf, fill, r, border_radius=10)
         border(surf, r, C["panel_edge"], 2)
+    k = pulse(ui.t, 4.0) if calm else 0.0
+    if calm:
+        tint(surf, r.inflate(-6, -6), (255, 255, 255), int(10 + 38 * k))
+        border(surf, r.inflate(2 + round(2 * k), 2 + round(2 * k)), mix_c(C["ready"], (255, 255, 255), k), 2)
     col = (255, 255, 255) if active else C["dim"]
     if not active:
         font.draw(surf, "AGUARDE", r.centerx, r.centery - font.CAP_H // 2 - 2, col, 1, "center")
     else:
         font.draw(surf, "FIM DE TURNO", r.centerx, r.centery - font.CAP_H // 2 - 4, col, 1, "center")
-        font.draw(surf, "[E]", r.centerx, r.centery + 8, (200, 235, 210), 1, "center")
+        sub, sub_col = ("SEM JOGADAS", C["ready"]) if calm else ("[E / ESPAÇO]", (200, 235, 210))
+        font.draw(surf, sub, r.centerx, r.centery + 8, sub_col, 1, "center")
 
 
 # ------------------------------------------------------------------ energia e mensagens
+def gems_state(ctrl: Controller, en: int) -> tuple[int, int]:
+    """(cristais acesos, indice do que acabou de mudar) com a animacao um a um da energia."""
+    for f in reversed(ctrl.fx):
+        if f.kind == "gems":
+            a, b = f.data
+            lit = anim.gems_lit(f.color, f.age, ctrl.timing.energy.gem_stagger, a, b)
+            return lit, (lit - 1 if f.color == "on" else lit)
+    return en, -1
+
+
 def draw_bar(surf: pygame.Surface, ctrl: Controller, ui: UIState) -> None:
     r = L.energy_rect()
     sh = ctrl.shown
@@ -588,23 +617,26 @@ def draw_bar(surf: pygame.Surface, ctrl: Controller, ui: UIState) -> None:
     en = sh.me.energy
     font.draw(surf, "ENERGIA", r.x + 10, r.y + 4, C["dim"])
     font.draw(surf, f"{en}/{tot}", r.right - 10, r.y + 4, (170, 210, 255), 1, "right")
+    lit, popped = gems_state(ctrl, en)
     step = 25
     gx = r.x + (r.w - ((cap - 1) * step + 24)) // 2
     for i in range(cap):
         gem_r = pygame.Rect(gx + i * step, r.y + 22, 24, 24)
-        if i < en:
+        if i < lit:
             name = "energia_cheia"
         else:
             name = "energia_vazia"
         if not skin.blit(surf, name, gem_r.topleft):
             cx, cy = gem_r.center
-            if i < en:
+            if i < lit:
                 diamond(surf, cx, cy, 9, C["gem_energy"], (30, 70, 120))
             else:
                 pts = [(cx, cy - 9), (cx + 9, cy), (cx, cy + 9), (cx - 9, cy)]
                 pygame.draw.polygon(surf, C["cost"] if i < tot else C["star_off"], pts, 2 if i < tot else 1)
         if en <= i >= tot:                      # alem do total deste turno: escurece
             tint(surf, gem_r, DARK, 120)
+        if i == popped:
+            tint(surf, gem_r, (255, 255, 255), 110)
     m = L.message_rect()
     txt = ctrl.hint()
     for k, ln in enumerate(font.wrap(txt, m.w - 14)[:2]):
@@ -623,68 +655,6 @@ def draw_toast(surf: pygame.Surface, ctrl: Controller) -> None:
     pygame.draw.rect(surf, fill, r, border_radius=6)
     pygame.draw.rect(surf, col, r, 2, border_radius=6)
     font.draw(surf, txt, r.centerx, r.centery - font.CAP_H // 2, col, 1, "center")
-
-
-# ------------------------------------------------------------------ efeitos
-def fx_rect(side: str, slot: int | None) -> pygame.Rect:
-    return L.leader_rect(side) if slot is None else L.slot_rect(side, slot)
-
-
-_FX_COLOR = {"bad": "bad", "good": "good", "buff": "buff", "dim": "dim", "energy": "energy"}
-
-
-def draw_tag_fx(surf: pygame.Surface, f, k: float) -> None:
-    r = L.energy_rect() if (f.card == "energy" and f.side == "player") else L.info_rect()
-    outlined(surf, f.text, r.centerx, r.y - 10 - int(24 * k), C[_FX_COLOR.get(f.color, "good")], 1)
-
-
-def draw_cast_fx(surf: pygame.Surface, f, k: float) -> None:
-    w = font.width(f.text, 1) + 28
-    pr = pygame.Rect(0, 0, w, 28)
-    pr.center = (W // 2, L.CENTER_Y)
-    col = C["player"] if f.side == "player" else C["enemy"]
-    pill(surf, pr, int(235 * min(1.0, (1 - k) * 3)))
-    border(surf, pr, col, 2)
-    if k < 0.8:
-        font.draw(surf, f.text, pr.centerx, pr.y + 9, (255, 255, 255), 1, "center")
-
-
-def draw_fx(surf: pygame.Surface, ctrl: Controller) -> None:
-    for f in ctrl.fx:
-        k = f.age / f.life
-        if f.kind == "tag":
-            draw_tag_fx(surf, f, k)
-            continue
-        if f.kind == "cast":
-            draw_cast_fx(surf, f, k)
-            continue
-        r = fx_rect(f.side, f.slot)
-        if f.kind == "flash":
-            col = (255, 255, 255) if f.color == "bad" else C["buff" if f.color == "buff" else "good"]
-            tint(surf, r, col, int(200 * (1 - k)))
-        elif f.kind == "float":
-            col = C[_FX_COLOR.get(f.color, "good")]
-            if f.slot is None:
-                outlined(surf, f.text, r.centerx, r.y - 4 - int(14 * k), col, 2)
-            else:
-                outlined(surf, f.text, r.centerx, r.centery - 10 - int(36 * k), col, 2)
-        elif f.kind == "line":
-            r2 = fx_rect(f.to_side, f.to_slot)
-            a, b = pygame.Vector2(r.center), pygame.Vector2(r2.center)
-            head = a + (b - a) * min(1.0, k / 0.5)
-            pygame.draw.line(surf, (255, 255, 255), a, head, 6)
-            pygame.draw.line(surf, C["warn"], a, head, 2)
-            pygame.draw.circle(surf, (255, 255, 255), (int(head.x), int(head.y)), 8)
-        elif f.kind == "die":
-            ghost = pygame.Surface(r.size, pygame.SRCALPHA)
-            c: Card = f.card
-            draw_card(ghost, ghost.get_rect(), c, c.atk, 0, c.hp, c.keywords, enemy=f.side == "enemy")
-            ghost.set_alpha(int(255 * (1 - k)))
-            surf.blit(ghost, r.topleft)
-            tint(surf, r, C["bad"], int(120 * (1 - k)))
-        elif f.kind == "enter":
-            grow = int(16 * (1 - k))
-            border(surf, r.inflate(grow, grow), (255, 255, 255), 3)
 
 
 # ------------------------------------------------------------------ tooltip
@@ -715,24 +685,6 @@ def draw_tooltip(surf: pygame.Surface, ctrl: Controller, elem: tuple) -> None:
 
 
 # ------------------------------------------------------------------ overlays
-def draw_banner(surf: pygame.Surface, ctrl: Controller) -> None:
-    if not ctrl.banner:
-        return
-    lines, _ = ctrl.banner
-    big = len(lines) > 1
-    scale = 3 if big else 2
-    w = max(font.width(lines[0], scale), *(font.width(s, 1) for s in lines[1:]), 0) + 48
-    cap = font.CAP_H * scale
-    h = 16 + cap + (24 * (len(lines) - 1) + 8 if big else 0) + 16
-    r = pygame.Rect(0, 0, w, h)
-    r.center = (W // 2, L.CENTER_Y)
-    pill(surf, r, 225)
-    border(surf, r, C["warn"], 3)
-    font.draw(surf, lines[0], r.centerx, r.y + 16, C["warn"] if big else (255, 255, 255), scale, "center")
-    for k, ln in enumerate(lines[1:]):
-        font.draw(surf, ln, r.centerx, r.y + 24 + cap + k * 24, C["text"], 1, "center")
-
-
 def draw_dice(surf: pygame.Surface, ctrl: Controller, ui: UIState) -> None:
     tint(surf, pygame.Rect(0, 0, W, H), (8, 10, 20), 215)
     p = pygame.Rect(W // 2 - 300, 130, 600, 280)
@@ -801,6 +753,35 @@ def draw_final(surf: pygame.Surface, ctrl: Controller, ui: UIState) -> None:
 
 # ------------------------------------------------------------------ quadro completo
 def draw_frame(surf: pygame.Surface, ctrl: Controller, ui: UIState) -> None:
+    """Quadro completo; com tremor de tela (e `ui.screen_shake` ligado) desloca tudo em px inteiros."""
+    from ui import render_fx
+    render_fx.shaken(surf, ctrl, ui.screen_shake, lambda target: _draw_scene(target, ctrl, ui))
+
+
+def _draw_field(surf: pygame.Surface, ctrl: Controller, ui: UIState, drop_slots: set[int]) -> None:
+    from ui import render_fx
+    sh = ctrl.shown
+    offs = render_fx.field_offsets(ctrl, ui)
+    hidden = render_fx.hidden_slots(ctrl)
+    lunge = render_fx.lunging(ctrl)
+    for side in ("enemy", "player"):
+        for n in range(L.SLOTS):
+            if T.side_view(sh, side).field[n] is None:
+                ghost = ctrl.spirit_ghost() if side == "player" else None
+                if ghost and ghost[0] == n:
+                    draw_spirit_ghost(surf, ghost[1], L.slot_rect(side, n))
+                    continue
+                draw_empty_slot(surf, L.slot_rect(side, n), side == "player" and n in drop_slots, ui.t)
+            elif (side, n) not in hidden and (side, n) not in lunge:
+                draw_field_cat(surf, ctrl, side, n, ui, offs.get((side, n), (0, 0)))
+    draw_leader(surf, ctrl, "player", ui)
+    for side, n in sorted(lunge):                       # o atacante passa por cima de tudo
+        if (side, n) in offs and T.side_view(sh, side).field[n] is not None:
+            draw_field_cat(surf, ctrl, side, n, ui, offs[(side, n)])
+
+
+def _draw_scene(surf: pygame.Surface, ctrl: Controller, ui: UIState) -> None:
+    from ui import render_fx, render_hand, render_preview
     surf.blit(board_surface(), (0, 0))
     sh = ctrl.shown
     can = ctrl.can_act()
@@ -811,23 +792,14 @@ def draw_frame(surf: pygame.Surface, ctrl: Controller, ui: UIState) -> None:
     draw_panel(surf, ctrl, ui)
     draw_bar(surf, ctrl, ui)
     draw_leader(surf, ctrl, "enemy", ui)
-    for side in ("enemy", "player"):
-        for n in range(L.SLOTS):
-            if T.side_view(sh, side).field[n] is None:
-                ghost = ctrl.spirit_ghost() if side == "player" else None
-                if ghost and ghost[0] == n:
-                    draw_spirit_ghost(surf, ghost[1], L.slot_rect(side, n))
-                    continue
-                draw_empty_slot(surf, L.slot_rect(side, n), side == "player" and n in drop_slots, ui.t)
-            else:
-                draw_field_cat(surf, ctrl, side, n, ui)
-    draw_leader(surf, ctrl, "player", ui)
+    _draw_field(surf, ctrl, ui, drop_slots)
     n_hand = len(sh.me.hand)
     hover = TIP.hover_elem(ctrl, ui.mouse, bool(ui.drag))
-    dragged = draw_hand(surf, ctrl, ui, hover)
-    draw_fx(surf, ctrl)
+    dragged = render_hand.draw_hand(surf, ctrl, ui, hover)
+    render_fx.draw_fx(surf, ctrl)
     if hover and hover[0] == "slot":
         border(surf, L.rect_of(hover, n_hand), (255, 255, 255), 2)
+    previewing = render_preview.draw_preview(surf, ctrl, ui)       # resultado antes de confirmar
     if ui.drag and dragged is not None and dragged < n_hand:
         card = sh.me.hand[dragged]
         r = pygame.Rect(0, 0, L.CARD_W, L.CARD_H)
@@ -839,10 +811,12 @@ def draw_frame(surf: pygame.Surface, ctrl: Controller, ui: UIState) -> None:
         a = pygame.Vector2(L.slot_rect("player", ui.drag[0][2]).center)
         pygame.draw.line(surf, (255, 255, 255), a, ui.drag[1], 4)
     draw_toast(surf, ctrl)
-    draw_banner(surf, ctrl)
-    if hover:
+    render_fx.draw_banner(surf, ctrl)
+    if hover and not previewing:
         draw_tooltip(surf, ctrl, hover)
-    if ctrl.phase == "dice":
+    if ctrl.intro:
+        render_fx.draw_boss_intro(surf, ctrl)
+    elif ctrl.phase == "dice":
         draw_dice(surf, ctrl, ui)
     elif ctrl.final_visible:
         draw_final(surf, ctrl, ui)

@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tempos e intensidades de animação do duelo (segundos e pixels)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "beats", "lunge", "hitstop", "shake", "damage_number", "poof",
+               "hand", "breathing", "turn_banner", "boss_intro", "energy", "fade", "enemy_speed"],
+  "$defs": {
+    "nonneg": {"type": "number", "minimum": 0},
+    "positive": {"type": "number", "exclusiveMinimum": 0},
+    "fraction": {"type": "number", "minimum": 0, "maximum": 1},
+    "shake": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amplitude", "duration"],
+      "properties": {
+        "amplitude": {"$ref": "#/$defs/nonneg"},
+        "duration": {"$ref": "#/$defs/nonneg"}
+      }
+    }
+  },
+  "properties": {
+    "version": {"const": 1},
+    "beats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Attacked", "CatPlayed", "EffectPlayed", "result", "heal", "buff",
+                   "turn", "Deadlock", "deadhit", "DuelEnded", "default"],
+      "properties": {
+        "Attacked": {"$ref": "#/$defs/nonneg"},
+        "CatPlayed": {"$ref": "#/$defs/nonneg"},
+        "EffectPlayed": {"$ref": "#/$defs/nonneg"},
+        "result": {"$ref": "#/$defs/nonneg"},
+        "heal": {"$ref": "#/$defs/nonneg"},
+        "buff": {"$ref": "#/$defs/nonneg"},
+        "turn": {"$ref": "#/$defs/nonneg"},
+        "Deadlock": {"$ref": "#/$defs/nonneg"},
+        "deadhit": {"$ref": "#/$defs/nonneg"},
+        "DuelEnded": {"$ref": "#/$defs/nonneg"},
+        "default": {"$ref": "#/$defs/nonneg"}
+      }
+    },
+    "lunge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["duration", "reach"],
+      "properties": {
+        "duration": {"$ref": "#/$defs/nonneg"},
+        "reach": {"$ref": "#/$defs/fraction"}
+      }
+    },
+    "hitstop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["normal", "lethal", "leader"],
+      "properties": {
+        "normal": {"$ref": "#/$defs/nonneg"},
+        "lethal": {"$ref": "#/$defs/nonneg"},
+        "leader": {"$ref": "#/$defs/nonneg"}
+      }
+    },
+    "shake": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["leader_hit", "lethal"],
+      "properties": {
+        "leader_hit": {"$ref": "#/$defs/shake"},
+        "lethal": {"$ref": "#/$defs/shake"}
+      }
+    },
+    "damage_number": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pop_scale", "pop_time", "rise", "life", "big_threshold", "big_scale"],
+      "properties": {
+        "pop_scale": {"$ref": "#/$defs/nonneg"},
+        "pop_time": {"$ref": "#/$defs/nonneg"},
+        "rise": {"$ref": "#/$defs/nonneg"},
+        "life": {"$ref": "#/$defs/nonneg"},
+        "big_threshold": {"type": "integer", "minimum": 0},
+        "big_scale": {"$ref": "#/$defs/nonneg"}
+      }
+    },
+    "poof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["particles", "life", "speed"],
+      "properties": {
+        "particles": {"type": "integer", "minimum": 0},
+        "life": {"$ref": "#/$defs/nonneg"},
+        "speed": {"$ref": "#/$defs/nonneg"}
+      }
+    },
+    "hand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["draw_slide", "play_arc", "hover_lift", "hover_scale", "hover_spread"],
+      "properties": {
+        "draw_slide": {"$ref": "#/$defs/nonneg"},
+        "play_arc": {"$ref": "#/$defs/nonneg"},
+        "hover_lift": {"$ref": "#/$defs/nonneg"},
+        "hover_scale": {"$ref": "#/$defs/nonneg"},
+        "hover_spread": {"$ref": "#/$defs/nonneg"}
+      }
+    },
+    "breathing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amplitude", "period"],
+      "properties": {
+        "amplitude": {"$ref": "#/$defs/nonneg"},
+        "period": {"$ref": "#/$defs/positive"}
+      }
+    },
+    "turn_banner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["duration"],
+      "properties": {
+        "duration": {"$ref": "#/$defs/nonneg"}
+      }
+    },
+    "boss_intro": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["duration"],
+      "properties": {
+        "duration": {"$ref": "#/$defs/nonneg"}
+      }
+    },
+    "energy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gem_stagger"],
+      "properties": {
+        "gem_stagger": {"$ref": "#/$defs/nonneg"}
+      }
+    },
+    "fade": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scene"],
+      "properties": {
+        "scene": {"$ref": "#/$defs/nonneg"}
+      }
+    },
+    "enemy_speed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["options", "default"],
+      "properties": {
+        "options": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {"pattern": "^[a-z0-9_]+$"},
+          "additionalProperties": {"$ref": "#/$defs/positive"}
+        },
+        "default": {"type": "string", "pattern": "^[a-z0-9_]+$"}
+      }
+    }
+  }
+}

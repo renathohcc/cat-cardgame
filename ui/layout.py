@@ -75,6 +75,12 @@ def leader_taunt_rect(side: str) -> pygame.Rect:
     return pygame.Rect(634, r.y + 8, 160, 40)
 
 
+def rule_rect() -> pygame.Rect:
+    """Icone da regra propria do inimigo, a esquerda do retrato (22x22, tooltip ao passar o mouse)."""
+    r = leader_rect("enemy")
+    return pygame.Rect(r.x - 30, r.centery - 11, 22, 22)
+
+
 def hand_pitch(n: int) -> int:
     if n <= 1:
         return PITCH

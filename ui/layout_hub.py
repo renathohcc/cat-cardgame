@@ -13,6 +13,10 @@ def menu_button(i: int) -> pygame.Rect:
     return pygame.Rect(W // 2 - 150, 250 + i * 66, 300, 54)
 
 
+def options_button() -> pygame.Rect:
+    return pygame.Rect(W - 200, 40, 180, 38)
+
+
 def menu_info_rect() -> pygame.Rect:
     return pygame.Rect(W // 2 - 300, 444, 600, 64)
 
@@ -213,6 +217,8 @@ def hit_test(pos: tuple[int, int], mode: str, *, rows: list[str] | None = None,
         for i, item in enumerate(MENU_ITEMS):
             if menu_button(i).collidepoint(pos):
                 return ("menu", item)
+        if options_button().collidepoint(pos):
+            return ("menu_options",)
         return vol_hit(pos)
     elif mode == "colecao":
         if rename:

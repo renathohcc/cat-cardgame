@@ -262,7 +262,7 @@ class RunController:
             audio.sfx("ui_open_modal")
         elif s == "duel" and self.duel_ctrl:
             c = self.duel_ctrl
-            if c.phase in ("over", "dice"):
+            if c.phase in ("over", "dice") or c.intro:
                 return
             if c.sel is not None or c.confirming:
                 c.cancel()
@@ -271,6 +271,32 @@ class RunController:
                 audio.sfx("ui_open_modal")
         elif s == "finished":
             self.wants_quit = True
+
+    def escape(self) -> bool:
+        """ESC: cancela o que houver (confirmacao de abandono, selecao do draft ou do duelo, fim).
+        False = nada a cancelar naquele contexto: a UI abre o menu de pausa."""
+        s = self.screen
+        if self.quit_confirm or s == "finished":
+            self.cancel()
+            return True
+        if s == "draft":
+            if self.draft_sel is None:
+                return False
+            self.draft_sel = None
+            return True
+        if s == "duel" and self.duel_ctrl:
+            c = self.duel_ctrl
+            return True if c.phase == "over" else c.escape()
+        return False
+
+    def request_abandon(self) -> None:
+        """Pausa > ABANDONAR RUN: abre a confirmacao de sempre (SIM = `abandon`, derrota)."""
+        if self.screen != "finished" and not self.quit_confirm:
+            self.quit_confirm = True
+            audio.sfx("ui_open_modal")
+
+    def scene_key(self) -> str:
+        return self.screen
 
     def confirm_key(self) -> None:
         """ENTER: continuar (fim do duelo), escolher a carta selecionada, nova run."""

@@ -57,20 +57,46 @@ def title(surf: pygame.Surface, txt: str, x: int, y: int, color=None, scale: int
     outlined(surf, txt, x, y, color or C["text"], scale, align)
 
 
+BUTTON_STATES = ("rest", "hover", "pressed", "disabled")
+
+
+def button_state(r: pygame.Rect, mouse, enabled: bool = True) -> str:
+    """Estado visual do botao: disabled | pressed (mouse em cima e botao esquerdo segurado) |
+    hover | rest. Estilo unico dos botoes (som de clique/hover vem do loop e dos controladores)."""
+    if not enabled:
+        return "disabled"
+    if not r.collidepoint(mouse):
+        return "rest"
+    try:
+        down = bool(pygame.mouse.get_pressed()[0])
+    except pygame.error:
+        down = False
+    return "pressed" if down else "hover"
+
+
 def button(surf: pygame.Surface, r: pygame.Rect, label: str, mouse, enabled: bool = True,
-           base=None, scale: int = 1, edge=WHITE) -> None:
-    hot = enabled and r.collidepoint(mouse)
+           base=None, scale: int = 1, edge=WHITE, state: str | None = None, focus: bool = False) -> None:
+    """Botao padrao com 4 estados (repouso/hover/pressionado/desabilitado). `state` forca o estado
+    (capturas e testes); `focus` = foco de teclado (desenha como hover + moldura de foco)."""
+    st = state or button_state(r, mouse, enabled)
+    if state is None and focus and st == "rest":
+        st = "hover"
     base = base or C["button"]
-    fill = mix_c(base, WHITE, 0.25) if hot else (base if enabled else C["button_off"])
+    fill = {"hover": mix_c(base, WHITE, 0.25), "pressed": mix_c(base, DARK, 0.3),
+            "disabled": C["button_off"]}.get(st, base)
+    off = 1 if st == "pressed" else 0
     pygame.draw.rect(surf, DARK, r.inflate(2, 2), border_radius=7)
     pygame.draw.rect(surf, fill, r, border_radius=6)
-    tint(surf, pygame.Rect(r.x + 3, r.y + 2, r.w - 6, 3), WHITE, 40 if enabled else 12)   # brilho
-    pygame.draw.rect(surf, edge if enabled else EDGE, r, 2, border_radius=6)
+    if st != "pressed":
+        tint(surf, pygame.Rect(r.x + 3, r.y + 2, r.w - 6, 3), WHITE, 12 if st == "disabled" else 40)   # brilho
+    pygame.draw.rect(surf, EDGE if st == "disabled" else edge, r, 2, border_radius=6)
+    if focus:
+        pygame.draw.rect(surf, C["warn"], r.inflate(6, 6), 2, border_radius=9)
     sc = scale
     while sc > 1 and font.width(label, sc) > r.w - 12:
         sc -= 1
-    ty = r.y + (r.h - font.CAP_H * sc) // 2
-    col = WHITE if enabled else C["dim"]
+    ty = r.y + (r.h - font.CAP_H * sc) // 2 + off
+    col = C["dim"] if st == "disabled" else WHITE
     font.draw(surf, font.fit(label, r.w - 8, sc), r.centerx, ty, col, sc, "center")
 
 

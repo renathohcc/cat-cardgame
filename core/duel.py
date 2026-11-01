@@ -8,10 +8,11 @@ from typing import Any
 from core.cats import cat_stats, roll_cat
 from core.content import actions_of
 from core.types import (
-    Action, AtkBuffed, AtkBuffExpired, Attack, Attacked, CatDied, CatPlayed, Card, Cat,
-    Content, DamageDealt, Deadlock, DeckSpec, DiceRolled, Drew, DrawSkipped, Duel,
-    DuelEnded, DuelView, EffectPlayed, EndTurn, EnergyChanged, Event, FieldCat, Healed,
-    IllegalAction, LeaderDamaged, LeaderHealed, PlayCat, PlayEffect, Side, SideState,
+    Action, AtkBuffed, AtkBuffExpired, Attack, Attacked, CatDied, CatPlayed, CatPreview,
+    Card, Cat, Content, DamageDealt, Deadlock, DeckSpec, DiceRolled, Drew, DrawSkipped,
+    Duel, DuelEnded, DuelView, EffectPlayed, EndTurn, EnergyChanged, Event, FieldCat,
+    Healed, IllegalAction, LeaderDamaged, LeaderHealed, LeaderPreview, PlayCat, PlayEffect,
+    Preview, Side, SideState,
     SideView, TurnStarted, Target, Winner, other,
 )
 
@@ -19,6 +20,7 @@ __all__ = [
     "new_duel", "new_duel_vs_enemy", "enemy_deck_spec", "legal_actions", "apply_action",
     "view", "is_over", "card_from_cat", "card_from_effect", "card_from_special",
     "card_targets", "attack_targets", "keyword_info", "build_duel_for_tests", "IllegalAction",
+    "preview_attack", "preview_card", "Preview", "CatPreview", "LeaderPreview",
 ]
 
 
@@ -277,12 +279,15 @@ def view(duel: Duel, side: Side) -> DuelView:
 
 
 # ------------------------------------------------------------------ aplicar
-def apply_action(duel: Duel, action: Action) -> list[Event]:
+def _validate(duel: Duel, action: Action) -> None:
     if duel.winner is not None:
         raise IllegalAction("duelo ja terminou")
     if action not in legal_actions(duel):
         raise IllegalAction(f"acao ilegal: {action!r}")
-    log: list[Event] = []
+
+
+def _do_action(duel: Duel, action: Action, log: list[Event]) -> None:
+    """Efeito direto da acao (mesmo caminho de apply_action e das previas)."""
     if isinstance(action, PlayCat):
         _play_cat(duel, action, log)
     elif isinstance(action, PlayEffect):
@@ -291,8 +296,18 @@ def apply_action(duel: Duel, action: Action) -> list[Event]:
         _attack(duel, action, log)
     else:
         _end_turn(duel, log)
+
+
+def _after_action(duel: Duel, log: list[Event]) -> None:
     _stall_scan(duel, log)
     _check_deadlock(duel, log)
+
+
+def apply_action(duel: Duel, action: Action) -> list[Event]:
+    _validate(duel, action)
+    log: list[Event] = []
+    _do_action(duel, action, log)
+    _after_action(duel, log)
     duel.log.extend(log)
     return log
 
@@ -540,6 +555,116 @@ def _resolve_deadlock(duel: Duel, log: list[Event]) -> None:
         dmg = max(cfg["min_damage"], power[cur] + rng.choice(cfg["variation"]))
         _hit_leader(duel, other(cur), dmg, log)
         cur = other(cur)
+
+
+# ------------------------------------------------------------------ previa
+def preview_attack(duel: Duel, attacker_slot: int, target: Target) -> Preview:
+    """Resultado de `Attack(attacker_slot, target)` sem alterar `duel` (nem o rng).
+
+    Ilegal -> IllegalAction (como apply_action). Ataques nao usam sorteio."""
+    action = Attack(attacker_slot, tuple(target))
+    log, _, deadlock = _simulate(duel, action)
+    return _build_preview(duel, action, log, deadlock)
+
+
+def preview_card(duel: Duel, hand_index: int, target: Target | None = None,
+                 slot: int | None = None) -> Preview | None:
+    """Resultado de jogar a carta `hand_index` da mao do lado da vez em `target`.
+
+    Efeito: `target` None = ("leader",). Gato/Espirito: `slot` None = 1o slot livre
+    legal. Ilegal -> IllegalAction. None se o efeito direto usar sorteio."""
+    action = _card_action(duel, hand_index, target, slot)
+    log, random_used, deadlock = _simulate(duel, action)
+    if random_used:
+        return None
+    return _build_preview(duel, action, log, deadlock)
+
+
+def _card_action(duel: Duel, hand_index: int, target: Target | None,
+                 slot: int | None) -> Action:
+    hand = duel.sides[duel.turn_side].hand
+    if not 0 <= hand_index < len(hand):
+        raise IllegalAction(f"carta inexistente na mao: {hand_index}")
+    tgt = tuple(target) if target is not None else None
+    if hand[hand_index].kind == "effect":
+        return PlayEffect(hand_index, tgt if tgt is not None else ("leader",))
+    if slot is not None:
+        return PlayCat(hand_index, slot, tgt)
+    for a in legal_actions(duel):
+        if isinstance(a, PlayCat) and a.hand_index == hand_index and a.target == tgt:
+            return a
+    raise IllegalAction(f"carta {hand_index} sem jogada legal no alvo {tgt!r}")
+
+
+def _sandbox(duel: Duel) -> Duel:
+    """Copia profunda do duelo (rng incluso); `content` compartilhado, log vazio."""
+    return copy.deepcopy(duel, {id(duel.content): duel.content, id(duel.log): []})
+
+
+def _simulate(duel: Duel, action: Action) -> tuple[list[Event], bool, bool]:
+    """(eventos diretos, usou sorteio, dispara impasse) numa copia do duelo."""
+    _validate(duel, action)
+    sb = _sandbox(duel)
+    state = sb.rng.getstate()
+    log: list[Event] = []
+    _do_action(sb, action, log)
+    random_used = sb.rng.getstate() != state
+    tail: list[Event] = []
+    _after_action(sb, tail)
+    return log, random_used, any(isinstance(e, Deadlock) for e in tail)
+
+
+def _cat_before(duel: Duel, action: Action, side: str, slot: int) -> dict[str, Any]:
+    fc = duel.sides[side].field[slot]
+    if fc is not None:
+        hp, atk = fc.hp, fc.atk
+    else:  # gato que entra com esta acao
+        assert isinstance(action, PlayCat)
+        card = duel.sides[side].hand[action.hand_index]
+        hp, atk = card.hp, card.atk
+    return dict(side=side, slot=slot, hp_before=hp, hp_after=hp, atk_before=atk,
+                atk_after=atk, damage=0, heal=0, dies=False)
+
+
+def _apply_cat_event(c: dict[str, Any], ev: Event) -> None:
+    if isinstance(ev, DamageDealt):
+        c["damage"] += ev.amount
+        c["hp_after"] = ev.hp_left
+    elif isinstance(ev, Healed):
+        c["heal"] += ev.amount
+        c["hp_after"] = ev.hp_left
+    elif isinstance(ev, AtkBuffed):
+        c["atk_after"] = ev.atk
+    elif isinstance(ev, CatDied):
+        c["dies"] = True
+        c["hp_after"] = 0
+
+
+def _apply_leader_event(duel: Duel, leaders: dict[str, dict[str, Any]], ev: Event) -> None:
+    hp = duel.sides[ev.side].leader_hp
+    x = leaders.setdefault(ev.side, dict(side=ev.side, hp_before=hp, hp_after=hp,
+                                         damage=0, heal=0))
+    x["hp_after"] = ev.hp_left
+    x["damage" if isinstance(ev, LeaderDamaged) else "heal"] += ev.amount
+
+
+def _build_preview(duel: Duel, action: Action, log: list[Event], deadlock: bool) -> Preview:
+    cats: dict[tuple[str, int], dict[str, Any]] = {}
+    leaders: dict[str, dict[str, Any]] = {}
+    winner = None
+    for ev in log:
+        if isinstance(ev, (DamageDealt, Healed, AtkBuffed, CatDied)):
+            key = (ev.side, ev.slot)
+            if key not in cats:
+                cats[key] = _cat_before(duel, action, ev.side, ev.slot)
+            _apply_cat_event(cats[key], ev)
+        elif isinstance(ev, (LeaderDamaged, LeaderHealed)):
+            _apply_leader_event(duel, leaders, ev)
+        elif isinstance(ev, DuelEnded):
+            winner = ev.winner
+    return Preview(action=action, cats=tuple(CatPreview(**c) for c in cats.values()),
+                   leaders=tuple(LeaderPreview(**x) for x in leaders.values()),
+                   winner=winner, deadlock=deadlock)
 
 
 # ------------------------------------------------------------------ testes

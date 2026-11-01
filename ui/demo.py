@@ -1,6 +1,6 @@
 """python -m ui.demo <tela> [--seed N]: abre uma tela isolada.
 
-Telas: elite1/elite2 (draft da elite 1/2 e 2/2), duelo, run (a run inteira), mapa, draft, descanso, fimrun (a run ja no ponto da tela).
+Telas: pausa/opcoes (menu de pausa e opcoes sobre o hub), elite1/elite2 (draft da elite 1/2 e 2/2), duelo, run (a run inteira), mapa, draft, descanso, fimrun (a run ja no ponto da tela).
 criatorio_hub (cercado animado)/menu/colecao/.../doar_confirmar/criatorio/criatorio_casal/criatorio_recusado/novidades: hub em memoria (sem tocar em saves/).
 """
 from __future__ import annotations
@@ -14,7 +14,7 @@ from ui.__main__ import main
 TELAS = ("duelo", "run", "mapa", "draft", "elite1", "elite2", "descanso", "fimrun", "abandonar",
          "menu", "colecao", "colecao_deck", "renomear", "adocao", "adocao_vazia", "doar_confirmar",
          "criatorio", "criatorio_casal", "criatorio_recusado", "novidades",
-         "criatorio_hub", "criatorio_hub_ficha", "criatorio_hub_adocao")
+         "criatorio_hub", "criatorio_hub_ficha", "criatorio_hub_adocao", "pausa", "opcoes")
 
 if __name__ == "__main__":
     tela = sys.argv[1] if len(sys.argv) > 1 else "duelo"

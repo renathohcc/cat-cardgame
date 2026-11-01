@@ -19,7 +19,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="renderiza uma cena sem janela e salva o PNG (3x)")
     ap.add_argument("--cena", default="inicio",
                     help="inicio | selecionado | ataque | final | dado | tooltip | confirmar | "
-                         "efeito | espirito | chefe | mapa | draft | descanso | fimrun | fimrun_vitoria | duelrun")
+                         "efeito | espirito | chefe | previa_gato | previa_lider | previa_morte | provocar | passar | registro | regra_chefe | foco_mao | mapa | draft | descanso | fimrun | fimrun_vitoria | duelrun | pausa | pausa_cercado | opcoes | opcoes_pausa | botoes | transicao")
     ap.add_argument("--run", action="store_true", help="abre a mini-run (mapa, duelos, draft)")
     ap.add_argument("--inimigo", metavar="ID", default=None,
                     help="id de data/enemies.json (padrão: sorteia um inimigo real pelo seed)")
@@ -41,7 +41,13 @@ def main(argv: list[str] | None = None) -> int:
         os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
         os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
         from ui.scenes_hub import ALL_SCENES as HUB_SCENES
+        from ui.scenes_pausa import SCENES as PAUSE_SCENES
         from ui.scenes_run import RUN_SCENES
+        if args.cena in PAUSE_SCENES:
+            from ui.scenes_pausa import shot as pause_shot
+            pause_shot(args.screenshot, seed, args.cena)
+            print(f"salvo: {args.screenshot} (seed {seed}, cena {args.cena})")
+            return 0
         if args.cena in HUB_SCENES:
             from ui.app_hub import screenshot as hub_shot
             hub_shot(args.screenshot, seed, args.cena, args.hora)

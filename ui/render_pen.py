@@ -299,7 +299,7 @@ def draw_side(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
         pygame.draw.rect(surf, mix_c(C["warn"], WHITE, glow), r.inflate(8, 8), 3, border_radius=9)
         button(surf, r, "ADOÇÃO!", m, base=(150, 108, 24), scale=2)
     button(surf, b("breed"), "BREED", m, base=(104, 76, 132))
-    button(surf, b("menu"), "MENU (ESC)", m, base=C["card"])
+    button(surf, b("menu"), "MENU", m, base=C["card"])
     hint = ("Deck pronto: INICIAR RUN." if full
             else f"Faltam {col.deck_size - col.deck_count} gato(s) no deck. Veja a COLEÇÃO.")
     hr = LP.hint_rect(geo)
