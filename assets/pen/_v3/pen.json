@@ -1,0 +1,485 @@
+{
+ "bg": "pen_bg_dia.png",
+ "bg_periods": {
+  "amanhecer": "pen_bg_amanhecer.png",
+  "dia": "pen_bg_dia.png",
+  "entardecer": "pen_bg_entardecer.png",
+  "noite": "pen_bg_noite.png"
+ },
+ "period_tint": {
+  "dia": [
+   255,
+   255,
+   255
+  ],
+  "amanhecer": [
+   255,
+   226,
+   214
+  ],
+  "entardecer": [
+   255,
+   196,
+   160
+  ],
+  "noite": [
+   118,
+   138,
+   206
+  ]
+ },
+ "lantern_on_periods": [
+  "entardecer",
+  "noite"
+ ],
+ "walk_area": [
+  48,
+  118,
+  656,
+  342
+ ],
+ "panel": [
+  736,
+  16,
+  208,
+  508
+ ],
+ "anchors": "x,y = centro-base do objeto (ancora no json do sheet); slots = offsets (dx,dy) do centro-base do gato; layer floor = abaixo de todos os gatos, sorted = ordenar por y; gato em slot e desenhado SEMPRE depois do objeto. zones.*.rect = [x,y,w,h]",
+ "zones": {
+  "adultos": {
+   "rect": [
+    48,
+    118,
+    388,
+    350
+   ],
+   "objects": [
+    {
+     "kind": "casinha",
+     "x": 118,
+     "y": 222,
+     "layer": "sorted",
+     "slots": [
+      [
+       -6,
+       -54
+      ],
+      [
+       -6,
+       10
+      ]
+     ],
+     "slot_use": "sleep"
+    },
+    {
+     "kind": "banco_arvore",
+     "x": 262,
+     "y": 214,
+     "layer": "sorted",
+     "slots": [
+      [
+       0,
+       -17
+      ]
+     ],
+     "slot_use": "sleep"
+    },
+    {
+     "kind": "cama_cesto",
+     "x": 90,
+     "y": 316,
+     "layer": "floor",
+     "slots": [
+      [
+       0,
+       -10
+      ]
+     ],
+     "slot_use": "sleep"
+    },
+    {
+     "kind": "cama_almofada",
+     "x": 372,
+     "y": 166,
+     "layer": "floor",
+     "slots": [
+      [
+       0,
+       -10
+      ]
+     ],
+     "slot_use": "sleep"
+    },
+    {
+     "kind": "cama_pedra",
+     "x": 384,
+     "y": 340,
+     "layer": "floor",
+     "slots": [
+      [
+       0,
+       -10
+      ]
+     ],
+     "slot_use": "sleep"
+    },
+    {
+     "kind": "cama_pedra",
+     "x": 226,
+     "y": 372,
+     "layer": "floor",
+     "slots": [
+      [
+       0,
+       -10
+      ]
+     ],
+     "slot_use": "sleep"
+    },
+    {
+     "kind": "cama_almofada",
+     "x": 290,
+     "y": 446,
+     "layer": "floor",
+     "slots": [
+      [
+       0,
+       -10
+      ]
+     ],
+     "slot_use": "sleep"
+    },
+    {
+     "kind": "novelo",
+     "x": 190,
+     "y": 296,
+     "layer": "floor",
+     "slots": [
+      [
+       -24,
+       0
+      ]
+     ],
+     "slot_use": "play"
+    },
+    {
+     "kind": "novelo",
+     "x": 290,
+     "y": 396,
+     "layer": "floor",
+     "slots": [
+      [
+       -24,
+       0
+      ]
+     ],
+     "slot_use": "play"
+    },
+    {
+     "kind": "ratinho",
+     "x": 318,
+     "y": 288,
+     "layer": "sorted",
+     "slots": [
+      [
+       -24,
+       0
+      ]
+     ],
+     "slot_use": "play"
+    },
+    {
+     "kind": "arranhador",
+     "x": 402,
+     "y": 254,
+     "layer": "sorted",
+     "slots": [
+      [
+       -26,
+       0
+      ]
+     ],
+     "slot_use": "play"
+    },
+    {
+     "kind": "arranhador",
+     "x": 356,
+     "y": 444,
+     "layer": "sorted",
+     "slots": [
+      [
+       -26,
+       0
+      ]
+     ],
+     "slot_use": "play"
+    }
+   ]
+  },
+  "breed": {
+   "rect": [
+    480,
+    124,
+    224,
+    132
+   ],
+   "objects": [
+    {
+     "kind": "cama_casal",
+     "x": 548,
+     "y": 190,
+     "layer": "floor",
+     "slots": [
+      [
+       -20,
+       -10
+      ],
+      [
+       20,
+       -10
+      ]
+     ],
+     "slot_use": "sleep"
+    },
+    {
+     "kind": "cama_casal",
+     "x": 652,
+     "y": 190,
+     "layer": "floor",
+     "slots": [
+      [
+       -20,
+       -10
+      ],
+      [
+       20,
+       -10
+      ]
+     ],
+     "slot_use": "sleep"
+    },
+    {
+     "kind": "cama_casal",
+     "x": 600,
+     "y": 244,
+     "layer": "floor",
+     "slots": [
+      [
+       -20,
+       -10
+      ],
+      [
+       20,
+       -10
+      ]
+     ],
+     "slot_use": "sleep"
+    }
+   ]
+  },
+  "filhotes": {
+   "rect": [
+    484,
+    312,
+    220,
+    148
+   ],
+   "objects": [
+    {
+     "kind": "viveiro_cesto",
+     "x": 548,
+     "y": 366,
+     "layer": "floor",
+     "slots": [
+      [
+       -18,
+       -9
+      ],
+      [
+       18,
+       -9
+      ]
+     ],
+     "slot_use": "sleep"
+    },
+    {
+     "kind": "viveiro_cesto",
+     "x": 654,
+     "y": 366,
+     "layer": "floor",
+     "slots": [
+      [
+       -18,
+       -9
+      ],
+      [
+       18,
+       -9
+      ]
+     ],
+     "slot_use": "sleep"
+    },
+    {
+     "kind": "bola_filhote",
+     "x": 590,
+     "y": 408,
+     "layer": "sorted",
+     "slots": [
+      [
+       -16,
+       0
+      ]
+     ],
+     "slot_use": "play"
+    },
+    {
+     "kind": "bola_filhote",
+     "x": 650,
+     "y": 402,
+     "layer": "sorted",
+     "slots": [
+      [
+       -16,
+       0
+      ]
+     ],
+     "slot_use": "play"
+    },
+    {
+     "kind": "tunel_filhote",
+     "x": 540,
+     "y": 444,
+     "layer": "sorted",
+     "slots": [
+      [
+       -46,
+       4
+      ]
+     ],
+     "slot_use": "play"
+    },
+    {
+     "kind": "tigela",
+     "x": 594,
+     "y": 456,
+     "layer": "floor",
+     "slots": []
+    },
+    {
+     "kind": "tigela_racao",
+     "x": 628,
+     "y": 456,
+     "layer": "floor",
+     "slots": []
+    },
+    {
+     "kind": "casinha_filhote",
+     "x": 670,
+     "y": 458,
+     "layer": "sorted",
+     "slots": []
+    }
+   ]
+  }
+ },
+ "ambient": [
+  {
+   "kind": "lagoa",
+   "x": 128,
+   "y": 440
+  },
+  {
+   "kind": "borboleta",
+   "x": 200,
+   "y": 270,
+   "phase": 0,
+   "periods": [
+    "dia",
+    "amanhecer"
+   ]
+  },
+  {
+   "kind": "borboleta",
+   "x": 560,
+   "y": 330,
+   "phase": 4,
+   "periods": [
+    "dia",
+    "amanhecer"
+   ]
+  },
+  {
+   "kind": "vagalumes",
+   "x": 150,
+   "y": 270,
+   "phase": 0,
+   "periods": [
+    "entardecer",
+    "noite"
+   ]
+  },
+  {
+   "kind": "vagalumes",
+   "x": 330,
+   "y": 330,
+   "phase": 3,
+   "periods": [
+    "entardecer",
+    "noite"
+   ]
+  },
+  {
+   "kind": "vagalumes",
+   "x": 590,
+   "y": 300,
+   "phase": 5,
+   "periods": [
+    "entardecer",
+    "noite"
+   ]
+  },
+  {
+   "kind": "folhas",
+   "x": 262,
+   "y": 150,
+   "phase": 0
+  },
+  {
+   "kind": "folhas",
+   "x": 60,
+   "y": 190,
+   "phase": 4
+  },
+  {
+   "kind": "folhas",
+   "x": 640,
+   "y": 120,
+   "phase": 2
+  },
+  {
+   "kind": "lanterna",
+   "x": 38,
+   "y": 104
+  },
+  {
+   "kind": "lanterna",
+   "x": 444,
+   "y": 98
+  },
+  {
+   "kind": "lanterna",
+   "x": 726,
+   "y": 104
+  },
+  {
+   "kind": "lanterna",
+   "x": 38,
+   "y": 490
+  },
+  {
+   "kind": "lanterna",
+   "x": 444,
+   "y": 494
+  }
+ ]
+}

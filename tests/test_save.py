@@ -193,7 +193,7 @@ def test_next_cat_id_baixo_e_erro(content):
         save_from_dict(d, content)
 
 
-@pytest.mark.parametrize("versao", [0, 2, 99, None, "1"])
+@pytest.mark.parametrize("versao", [0, 3, 99, None, "1", "2"])
 def test_versao_errada_e_erro(content, versao):
     d = _mut(content, lambda d: d.__setitem__("schema_version", versao))
     with pytest.raises(ValueError):

@@ -70,3 +70,9 @@ Consolida as antigas secoes T9.0, T9.2, T9.4, T9.6, T9.7, T9.8, T9.9 e T9.11. Os
 - Substituidos por candidatos (adopt, cat_death, cat_death_2, kitten_born, kitten_mew, mapa_run, meow_1, meow_2, meow_3, meow_4, pet, pet_2, purr); todos CC0 / dominio publico ou sintetizados por script (sem amostras externas). Nenhuma atribuicao obrigatoria.
 - Fontes: BigSoundBank - Cat Purr (s0436); BigSoundBank - Little Meow of a Cat #1 (s0494); BigSoundBank - Little meow of a cat #3 (s1473); BigSoundBank - Meow cat #1 (s1889); BigSoundBank - Small mewing of a cat (s0098); Cozy Puzzle In-Game 3 (OpenGameArt); Kenney - Interface Sounds (glass_003); Sintetizado por script (assets/tools/build_audio_candidates.py), sem amostras externas. Autores: Joseph Sardin; Kenney; MintoDog; projeto Chaoscats.
 - Detalhe por arquivo em `assets/audio/CREDITS.md`; licencas lidas nas paginas das fontes em 2026-10-29. Candidatos nao usados continuam em `assets/audio/_candidatos/` (nao entram no build).
+
+## Quintal: bloqueio e desbloqueio de areas (T13.3, 2026-11-03)
+- `assets/pen/lock/` (camadas `bloqueio_*.png`, `placa_livre.png`, `placa_bloqueada.png`, `unlock_anim.png`, `icons/*.png`, `icons.png`): arte **100% por script proprio** (Pillow, `assets/tools/build_t13_lock.py`), paleta PEN de 48 cores, sem IA generativa, sem material de terceiros. Previa e checagem de paleta/grade: `assets/tools/build_t13_preview.py`.
+
+## Quintal: conteudo das areas 4 a 6 e animacao de desbloqueio v2 (T13.3b, 2026-11-04)
+- `assets/pen/lock/conteudo/*.png`, `assets/pen/lock/conteudo.json` e `assets/pen/lock/unlock_anim.png` (v2): arte **100% por script proprio** (Pillow; `assets/tools/build_t13b_content.py`, `build_t13b_anim.py`; checagem e previa em `build_t13b_preview.py`), paleta PEN, sem IA generativa e sem material de terceiros.

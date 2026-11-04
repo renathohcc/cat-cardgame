@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "start": {
+    "slots": 18,
+    "couples": 1,
+    "kittens_in_basket": true
+  },
+  "max_slots": 30,
+  "areas": [
+    {
+      "id": "cercado-adultos-ampliado",
+      "name": "Cercado dos adultos ampliado",
+      "description": "A cerca recua e os adultos ganham espaço para esticar as patas.",
+      "price": 15,
+      "prestige_required": 1,
+      "slots_bonus": 2,
+      "unlocks": [],
+      "order": 1
+    },
+    {
+      "id": "cercadinho-filhotes",
+      "name": "Cercadinho de filhotes",
+      "description": "Cerca branca, bolinha e túnel. Os filhotes saem da cesta.",
+      "price": 25,
+      "prestige_required": 1,
+      "slots_bonus": 2,
+      "unlocks": [
+        {
+          "type": "kitten_pen"
+        }
+      ],
+      "order": 2
+    },
+    {
+      "id": "patio-casais-ampliado",
+      "name": "Pátio de casais ampliado",
+      "description": "Mais um cantinho romântico para o casal nº 2.",
+      "price": 40,
+      "prestige_required": 2,
+      "slots_bonus": 2,
+      "unlocks": [
+        {
+          "type": "couple_slot",
+          "couple": 2
+        }
+      ],
+      "order": 3
+    },
+    {
+      "id": "jardim-lagoa",
+      "name": "Jardim e lagoa",
+      "description": "Flores, lagoa e um cantinho de sol para os gatos.",
+      "price": 60,
+      "prestige_required": 3,
+      "slots_bonus": 2,
+      "unlocks": [
+        {
+          "type": "decor_set",
+          "set": "jardim"
+        }
+      ],
+      "order": 4
+    },
+    {
+      "id": "patio-casais-nobre",
+      "name": "Pátio de casais nobre",
+      "description": "O pátio chique do casal nº 3. Pata de veludo exigida.",
+      "price": 85,
+      "prestige_required": 4,
+      "slots_bonus": 2,
+      "unlocks": [
+        {
+          "type": "couple_slot",
+          "couple": 3
+        }
+      ],
+      "order": 5
+    },
+    {
+      "id": "pomar",
+      "name": "Pomar e árvore grande",
+      "description": "Uma árvore enorme, ótima para observar passarinhos.",
+      "price": 115,
+      "prestige_required": 5,
+      "slots_bonus": 2,
+      "unlocks": [
+        {
+          "type": "decor_rare"
+        }
+      ],
+      "order": 6
+    }
+  ],
+  "rations": [
+    {
+      "id": "racao-fofa",
+      "name": "Ração Fofa",
+      "description": "Mais chance de mutação nos IVs da ninhada.",
+      "price": 12,
+      "prestige_required": 1
+    },
+    {
+      "id": "racao-veloz",
+      "name": "Ração Veloz",
+      "description": "O breed termina 1 run antes (mínimo de 1 run).",
+      "price": 15,
+      "prestige_required": 2,
+      "effect": {
+        "type": "breed_runs_reduction",
+        "value": 1,
+        "min_runs": 1
+      }
+    },
+    {
+      "id": "racao-escolha",
+      "name": "Ração Escolha",
+      "description": "Você fixa 1 IV de um dos pais e a ninhada inteira herda.",
+      "price": 30,
+      "prestige_required": 3,
+      "effect": {
+        "type": "fix_one_iv",
+        "value": true
+      }
+    }
+  ],
+  "decorations": [
+    {
+      "id": "deco-novelo",
+      "name": "Novelo colorido",
+      "description": "Rola, enrola e desenrola.",
+      "price": 10,
+      "kind": "novelo",
+      "area_required": "cercado-adultos-ampliado",
+      "placeholder": false
+    },
+    {
+      "id": "deco-ratinho",
+      "name": "Ratinho de pelúcia",
+      "description": "Dá medo só nos gatos que fingem.",
+      "price": 12,
+      "kind": "ratinho",
+      "area_required": "cercado-adultos-ampliado",
+      "placeholder": false
+    },
+    {
+      "id": "deco-cama-almofada",
+      "name": "Cama de almofada",
+      "description": "Fofa que nem nuvem.",
+      "price": 20,
+      "kind": "cama_almofada",
+      "area_required": "cercado-adultos-ampliado",
+      "placeholder": false
+    },
+    {
+      "id": "deco-arranhador",
+      "name": "Arranhador alto",
+      "description": "Seu sofá agradece.",
+      "price": 25,
+      "kind": "arranhador",
+      "area_required": "cercado-adultos-ampliado",
+      "placeholder": false
+    },
+    {
+      "id": "deco-bola-filhote",
+      "name": "Bolinha de filhote",
+      "description": "Pequena, rápida e irresistível.",
+      "price": 10,
+      "kind": "bola_filhote",
+      "area_required": "cercadinho-filhotes",
+      "placeholder": false
+    },
+    {
+      "id": "deco-tunel-filhote",
+      "name": "Túnel de filhote",
+      "description": "Entra por um lado, sai pelo outro, pelo menos em tese.",
+      "price": 20,
+      "kind": "tunel_filhote",
+      "area_required": "cercadinho-filhotes",
+      "placeholder": false
+    },
+    {
+      "id": "deco-banco-arvore",
+      "name": "Banco de tronco",
+      "description": "Cochilo com vista para o jardim.",
+      "price": 35,
+      "kind": "banco_arvore",
+      "area_required": "jardim-lagoa",
+      "set": "jardim",
+      "placeholder": false
+    },
+    {
+      "id": "deco-lagoa-enfeite",
+      "name": "Lagoinha de peixes",
+      "description": "Os peixes fingem que não estão vendo os gatos.",
+      "price": 50,
+      "kind": "lagoa",
+      "area_required": "jardim-lagoa",
+      "set": "jardim",
+      "placeholder": true
+    },
+    {
+      "id": "deco-arvore-grande",
+      "name": "Balanço da árvore grande",
+      "description": "Peça rara do pomar.",
+      "price": 60,
+      "kind": "arvore_balanco",
+      "area_required": "pomar",
+      "placeholder": true
+    }
+  ]
+}

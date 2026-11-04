@@ -6,11 +6,13 @@ from typing import Any
 
 from core.cats import roll_cat
 from core.collection import available_cats, get_cat
+from core.kennel import can_adopt
+from core.prestige import update_prestige
 from core.save import SaveData, format_cat_id, register_dex
 from core.types import Cat, Content, IllegalAction
 
 __all__ = ["adoption_weights", "adoption_count", "donation_value", "create_adoption",
-           "adopt", "donate_offer", "donate_cat", "can_donate", "has_pending_adoption"]
+           "adopt", "donate_offer", "donate_cat", "can_donate", "has_pending_adoption", "room_candidates"]
 
 _MAX_TRIES = 200
 _VICTORY = ("vitoria", "victory")
@@ -58,7 +60,20 @@ def donation_value(content: Content, cat: Cat) -> int:
             best_min, value = m, int(row["coins"])
     if cat.stage == "kitten":
         value = int(value * float(cfg.get("kitten_donation_factor", 0.5)))
+    if is_bred(cat):
+        value = int(value * _bred_multiplier(content))
     return value
+
+
+def is_bred(cat: Cat) -> bool:
+    """Nascido de breed: geracao >= 2 ou com pais. Adotado (G1) nao e."""
+    return cat.generation >= 2 or bool(cat.parents)
+
+
+def _bred_multiplier(content: Content) -> float:
+    cfg = _cfg(content)
+    raw = cfg.get("donation_bred_multiplier", content.rules.get("donation_bred_multiplier", 1))
+    return float(raw)
 
 
 def has_pending_adoption(save: SaveData) -> bool:
@@ -126,11 +141,30 @@ def _take(save: SaveData, cat_id: str) -> Cat:
     raise IllegalAction(f"gato {cat_id!r} nao esta na oferta")
 
 
-def adopt(content: Content, save: SaveData, cat_id: str) -> Cat:
+def adopt(content: Content, save: SaveData, cat_id: str,
+          enforce_capacity: bool = True) -> Cat:
+    """Adota um gato da oferta. Por padrao (`enforce_capacity=True`) o
+    gatil cheio recusa (IllegalAction): libere vaga com `donate_cat` (um gato da
+    colecao, ver `room_candidates`) ou doe o novo com `donate_offer`. O gato nunca
+    se perde sozinho: ao recusar, a oferta fica intacta. `enforce_capacity=False`
+    desliga o limite de forma explicita (migracao, simulador, testes)."""
+    if enforce_capacity and content.shop:
+        if not any(c.id == cat_id for c in (save.pending_adoption or {"cats": []})["cats"]):
+            raise IllegalAction(f"gato {cat_id!r} nao esta na oferta")
+        ok, reason = can_adopt(content, save)
+        if not ok:
+            raise IllegalAction(reason)
     cat = _take(save, cat_id)
     save.cats.append(cat)
     register_dex(save, cat)
+    update_prestige(content, save)
     return cat
+
+
+def room_candidates(content: Content, save: SaveData) -> list[Cat]:
+    """Gatos da colecao que podem ser doados para abrir vaga (`can_donate`: fora de
+    breed e sobrando 12 adultos disponiveis). O gato novo sempre pode ser doado."""
+    return [c for c in save.cats if can_donate(content, save, c.id)[0]]
 
 
 def donate_offer(content: Content, save: SaveData, cat_id: str) -> int:
@@ -160,5 +194,6 @@ def donate_cat(content: Content, save: SaveData, cat_id: str) -> int:
     value = donation_value(content, cat)
     save.cats = [c for c in save.cats if c.id != cat_id]
     save.deck = [i for i in save.deck if i != cat_id]
+    save.legacy_capacity = min(save.legacy_capacity, len(save.cats))
     save.coins += value
     return value

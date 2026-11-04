@@ -64,6 +64,8 @@ class Run:
         self.status = "map"
         self.result: str | None = None      # "vitoria" | "derrota"
         self.nodes_cleared = 0
+        self.wins: dict[str, int] = {}      # duelos vencidos por tipo de no (batalha/elite/chefe)
+        self.settled = False                # True depois de `close_run` (paga uma vez so)
         self.node: dict[str, Any] | None = None   # no escolhido na camada atual
         self.draft_options: list[str] = []
         self.drafts_left = 0        # drafts ainda por abrir DEPOIS do atual
@@ -142,6 +144,8 @@ class Run:
             self._finish("derrota")
             return
         self.nodes_cleared += 1
+        tipo = self.node["tipo"]
+        self.wins[tipo] = self.wins.get(tipo, 0) + 1
         if self.node["tipo"] == "chefe":
             self._finish("vitoria")
         else:
@@ -218,6 +222,7 @@ class Run:
             "version": 1,
             "status": self.status, "result": self.result, "layer": self.layer,
             "nodes_cleared": self.nodes_cleared, "node": copy.deepcopy(self.node),
+            "wins": dict(self.wins),
             "draft_options": list(self.draft_options),
             "drafts_left": self.drafts_left, "draft_total": self.draft_total,
             "draft_taken": list(self._draft_taken), "draft_key": self._draft_key,
@@ -234,6 +239,7 @@ class Run:
         run = cls(content, Random(), [Cat(**c) for c in d["cats"]])
         run.status, run.result, run.layer = d["status"], d["result"], d["layer"]
         run.nodes_cleared = d["nodes_cleared"]
+        run.wins = dict(d.get("wins", {}))
         run.node = copy.deepcopy(d["node"])
         run.draft_options = list(d["draft_options"])
         run.cards = list(d["cards"])

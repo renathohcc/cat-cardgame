@@ -74,8 +74,29 @@ class CollectionController:
             return ""
         v = self.donate_value(cat)
         return f"Doar {cat.name or self.breed_name(cat)} por {v} moeda{'s' if v != 1 else ''}?"
+
     def say(self, text: str, kind: str = "error", ttl: float = 2.5) -> None:
         self.toast = Toast(text, kind, ttl)
+
+    def parent_names(self, cat: Cat) -> list[str]:
+        """Nomes dos pais (apelido ou raca). Pai que ja saiu da colecao (doado) vira \"?\"."""
+        by_id = {c.id: c for c in self.save.cats}
+        out = []
+        for pid in getattr(cat, "parents", []) or []:
+            p = by_id.get(pid)
+            out.append((p.name or self.breed_name(p)) if p else "?")
+        return out
+
+    def lineage_text(self, cat: Cat) -> str:
+        """\"G2 · Pais: A e B\" (G1 = adotado, sem pais)."""
+        gen = getattr(cat, "generation", 1)
+        names = self.parent_names(cat)
+        return f"G{gen}" + (f" · Pais: {' e '.join(names)}" if names else " · Adotado")
+
+    def history_text(self, cat: Cat) -> str:
+        h = getattr(cat, "history", None) or {}
+        return (f"Runs {h.get('runs', 0)} · Duelos {h.get('duels_won', 0)} · "
+                f"Chefes {h.get('bosses_defeated', 0)}")
 
     def breed_name(self, cat: Cat) -> str:
         return self.content.breeds.get(cat.breed, {}).get("nome", cat.breed)

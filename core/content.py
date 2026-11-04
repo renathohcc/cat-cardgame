@@ -126,6 +126,22 @@ def _cross_check_run(content: Content) -> None:
                 raise ValueError(f"run.json: no '{node['id']}' ({node['tipo']}) sem inimigo")
 
 
+def _cross_check_shop(content: Content) -> None:
+    shop = content.shop
+    if not shop:
+        return
+    area_ids = {a["id"] for a in shop["areas"]}
+    for d in shop["decorations"]:
+        if d["area_required"] not in area_ids:
+            raise ValueError(f"shop.json: decoracao '{d['id']}' usa area inexistente "
+                             f"'{d['area_required']}'")
+    breed = content.rules.get("breed", {}) or {}
+    need = (content.rules["duel"]["deck_size"] + 2 + int(breed.get("litter_max", 3)))
+    if shop["start"]["slots"] < need:
+        raise ValueError(f"shop.json: start.slots ({shop['start']['slots']}) < deck + 2 + "
+                         f"ninhada maxima ({need}); o breed ficaria sem espaco")
+
+
 def load_content(data_dir: Path) -> Content:
     data_dir = Path(data_dir)
     docs: dict[str, Any] = {}
@@ -133,7 +149,7 @@ def load_content(data_dir: Path) -> Content:
         docs[name] = _read(data_dir, name)
         _validate(data_dir, name, docs[name])
     extras: dict[str, Any] = {}
-    for name in ("specials", "effects", "enemies", "run"):
+    for name in ("specials", "effects", "enemies", "run", "shop"):
         if (data_dir / f"{name}.json").exists():
             doc = _read(data_dir, name)
             _validate(data_dir, name, doc)
@@ -148,8 +164,10 @@ def load_content(data_dir: Path) -> Content:
         specials=_index(extras.get("specials", {}).get("specials", []), "specials"),
         enemies=_index(extras.get("enemies", {}).get("enemies", []), "enemies"),
         run=extras.get("run"),
+        shop=extras.get("shop", {}),
     )
     _cross_check(content)
     _cross_check_phase3(content)
     _cross_check_run(content)
+    _cross_check_shop(content)
     return content

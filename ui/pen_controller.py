@@ -15,10 +15,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from random import Random
 
-from ui import daycycle
-from ui.pen_geometry import BED_KINDS, FALLBACK_MAX_CATS, FALLBACK_ZONE_CAPS, MOVER_KINDS, ZONES, ObjectSpec, PenGeometry
+from ui import daycycle, pen_world
+from ui.pen_geometry import (BED_KINDS, FALLBACK_MAX_CATS, FALLBACK_ZONE_CAPS, MOVER_KINDS, ZONES, ObjectSpec,
+                             PenGeometry, make_object)
 
 ROTATE_S = 60.0
+SIDE_MARGIN = 28             # folga (px) entre o gato e a lateral de uma area bloqueada
 WALK_SPEED = 30.0            # px/s
 KITTEN_SPEED = 38.0
 FADE_S = 0.6
@@ -95,6 +97,9 @@ class PenObject:
     oneshot: str | None = None    # cama: "enter" (gato deita) | "exit" (gato levanta), tocado uma vez
     oneshot_t: float = 0.0
     sleepers: int = 0
+    active: bool = True           # False: area bloqueada ou decoracao ainda nao comprada
+    gate: str | None = None       # id da decoracao que liga este objeto (None = sempre que a area abrir)
+    baked: bool = False           # arte ja esta no `floor`/sprite da area: so os slots existem (nada a desenhar)
 
     @property
     def is_bed(self) -> bool:
@@ -148,6 +153,9 @@ class PenController:
         for z in ZONES:
             for spec in self.geo.zones[z].objects:
                 self.objects.append(PenObject(spec, z, len(self.objects), rect=self.rects[z]))
+        self._content_added = False
+        self._home: dict[int, tuple[float, float]] = {}
+        self.zone_open: dict[str, bool] = {z: True for z in ZONES}      # False: zona toda sob area bloqueada
         self.cats: list[PenCat] = []
         self.hearts: list[Heart] = []
         self.entries: dict[str, PenEntry] = {}
@@ -156,9 +164,73 @@ class PenController:
         self.rotate_clock = 0.0
         self.time = 0.0
 
+    # ------------------------------------------------------------ mundo (areas e decoracao)
+    def add_decor(self, gate: str, kind: str, x: float, y: float) -> PenObject | None:
+        """Objeto de decoracao em ancora fixa; nasce inativo ate `set_world` liga-lo."""
+        zone = pen_world.decor_zone({z: self.geo.zones[z].rect for z in ZONES}, x, y)
+        if zone is None:
+            return None
+        o = PenObject(make_object(kind, x, y), zone, len(self.objects), rect=self.rects[zone],
+                      active=False, gate=gate)
+        self.objects.append(o)
+        return o
+
+    def _add_content(self, content: dict) -> None:
+        """Objetos do conteudo das areas 4 a 6 (lagoa, cama do casal 3, arvore): nascem inativos."""
+        zones = {z: self.geo.zones[z].rect for z in ZONES}
+        for aid, area in content.items():
+            for co in area.objects:
+                zone = pen_world.decor_zone(zones, co.x, co.y)
+                if zone is None:
+                    continue
+                spec = ObjectSpec(co.kind, float(co.x), float(co.y), list(co.slots), co.slot_use, co.layer)
+                self.objects.append(PenObject(spec, zone, len(self.objects), rect=self.rects[zone], active=False,
+                                              gate=f"area:{aid}", baked=True))
+
+    def _relocate(self, opened: set[str]) -> None:
+        """Objetos do pen.json cobertos pela arte de uma area aberta vao para um ponto livre (e voltam se fechar)."""
+        for o in self.objects:
+            if o.gate is not None:
+                continue
+            home = self._home.setdefault(o.index, (o.spec.x, o.spec.y))
+            new = pen_world.RELOCATE.get((o.spec.kind, int(home[0]), int(home[1])))
+            moved = new is not None and pen_world.RELOCATE_AREA.get(o.spec.kind) in opened
+            o.spec.x, o.spec.y = (float(new[0]), float(new[1])) if moved and new else home
+
+    def set_world(self, locks: list[tuple[int, int, int, int]], decor_on: set[str] | frozenset[str] = frozenset(),
+                  content: dict | None = None, opened: set[str] | frozenset[str] = frozenset()) -> None:
+        """Aplica as areas ainda bloqueadas: cada zona anda so no maior retangulo livre e os objetos
+        sob a camada (ou de decoracao nao comprada) ficam inativos. Chamado a cada mudanca da loja.
+        `content`/`opened`: conteudo das areas abertas (ver `pen_world.ContentArea`); a arte dele
+        substitui os objetos com slots do pen.json que ficam dentro do retangulo."""
+        if content and not self._content_added:
+            self._content_added = True
+            self._add_content(content)
+        opened = set(opened)
+        self._relocate(opened)
+        decor_on = set(decor_on) | {f"area:{a}" for a in opened}
+        covers = [content[a].rect for a in opened if content and a in content]
+        walls = [(x - SIDE_MARGIN, y, w + 2 * SIDE_MARGIN, h) for x, y, w, h in locks]     # gato nao encosta na camada
+        for z in ZONES:
+            base = self.geo.zones[z].rect
+            r = pen_world.free_rect(base, walls)
+            self.zone_open[z] = r is not None
+            r = r or (base[0], base[1], 0, 0)
+            self.rects[z] = (float(r[0]), float(r[1]), float(r[0] + r[2]), float(r[1] + r[3]))
+        for o in self.objects:
+            o.rect = self.rects[o.zone]
+            replaced = (o.gate is None and bool(o.spec.slots) and pen_world.point_locked(o.spec.x, o.spec.y, covers))
+            o.active = ((o.gate is None or o.gate in decor_on) and self.zone_open[o.zone] and not replaced
+                        and not pen_world.point_locked(o.spec.x, o.spec.y, locks))
+        for c in self.cats:
+            if c.obj is not None and not self.objects[c.obj].active:
+                self._release(c)
+                c.state, c.timer, c.goal = "idle", 0.5, None
+
     # ------------------------------------------------------------ elenco
     def sync(self, entries: list[PenEntry], rotate: bool = False) -> None:
         """Atualiza o elenco: quem sai some com fade, quem entra nasce numa posicao sorteada."""
+        entries = [e for e in entries if self.zone_open.get(e.zone, True)]
         self.entries = {e.cat_id: e for e in entries}
         self.shown = self._choose(entries, rotate)
         want = set(self.shown)
@@ -293,7 +365,7 @@ class PenController:
         """Indice do objeto sob `pos` (o da frente)."""
         px, py = pos
         for o in sorted(self.objects, key=lambda o: -o.spec.y):
-            if not o.spec.slots:                       # decorativo (tigela, casinha_filhote): nao clicavel
+            if not o.active or not o.spec.slots:       # inativo ou decorativo (tigela, casinha_filhote): nao clicavel
                 continue
             x, y = o.spec.x + o.ox, o.spec.y + o.oy
             if x - OBJ_HIT_W / 2 <= px < x + OBJ_HIT_W / 2 and y - OBJ_HIT_H <= py < y + 4:
@@ -316,6 +388,8 @@ class PenController:
         if not 0 <= index < len(self.objects):
             return False
         o = self.objects[index]
+        if not o.active:
+            return False
         o.boost = OBJ_POKE_S
         if o.spec.slot_use != "play":
             return True
@@ -455,7 +529,7 @@ class PenController:
         c.obj = c.slot = None
 
     def _free_slots(self, c: PenCat, use: str) -> list[tuple[int, int]]:
-        return [(o.index, s) for o in self.objects if o.zone == c.zone and o.spec.slot_use == use
+        return [(o.index, s) for o in self.objects if o.active and o.zone == c.zone and o.spec.slot_use == use
                 for s in range(len(o.spec.slots)) if s not in o.occ]
 
     def _reserve(self, c: PenCat, o: PenObject, slot: int, goal: str) -> None:
@@ -468,7 +542,7 @@ class PenController:
     def _couple_bed(self, c: PenCat, mate: PenCat) -> PenObject | None:
         if mate.state not in ("idle", "walk") or mate.goal or mate.obj is not None or mate.cat_id == self.held:
             return None
-        beds = [o for o in self.objects if o.zone == c.zone and o.spec.slot_use == "sleep"
+        beds = [o for o in self.objects if o.active and o.zone == c.zone and o.spec.slot_use == "sleep"
                 and o.kind == "cama_casal" and len(o.spec.slots) >= 2 and not o.occ]
         return self.rng.choice(beds) if beds else None
 

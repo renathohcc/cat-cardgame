@@ -1,0 +1,13 @@
+{
+  "image": "unlock_anim.png",
+  "frame_size": [
+    96,
+    96
+  ],
+  "frames": 8,
+  "fps": 20,
+  "duration_ms": 400,
+  "loop": false,
+  "origin": "centro do quadro",
+  "note": "1 explosao por 96x96; ladrilhar sobre a area em passos de 96 e desvanecer a camada em sincronia"
+}

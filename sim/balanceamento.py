@@ -519,6 +519,7 @@ def nascer_emulado(content: Content, save: SaveData, rng: Random, male: Cat, fem
     cfg = content.rules["breed"]
     n = rng.randint(cfg["litter_min"], cfg["litter_max"])
     out = []
+    geracao = max(male.generation, female.generation) + 1
     for _ in range(n):
         breed = female.breed if rng.random() < cfg["mother_breed_chance"] else male.breed
         sex = rng.choice(("M", "F"))
@@ -526,7 +527,8 @@ def nascer_emulado(content: Content, save: SaveData, rng: Random, male: Cat, fem
         ia = _iv_filhote(rng, male.iv_atk, female.iv_atk, cfg["mutation_chance"], melhor)
         ih = _iv_filhote(rng, male.iv_hp, female.iv_hp, cfg["mutation_chance"], melhor)
         cat = Cat(id=format_cat_id(save.next_cat_id), breed=breed, sex=sex, nature=nature,
-                  iv_atk=ia, iv_hp=ih, stage="kitten", rest_runs_left=0, runs_as_kitten=0)
+                  iv_atk=ia, iv_hp=ih, stage="kitten", rest_runs_left=0, runs_as_kitten=0,
+                  generation=geracao, parents=[male.id, female.id])
         save.next_cat_id += 1
         save.cats.append(cat)
         register_dex(save, cat)
@@ -587,7 +589,7 @@ def iniciar_casais(content: Content, save: SaveData, estrategia: str, melhor: bo
                            key=lambda p: pontos_casal(p[0], p[1], mut, melhor), reverse=True)
         for m, f in pares:
             if can_breed(content, save, m.id, f.id)[0]:
-                start_breed(content, save, m.id, f.id)
+                start_breed(content, save, m.id, f.id, enforce_limits=False)
                 if tempo_fn:
                     save.breeding[-1]["runs_left"] = tempo_fn(m, f)
                 break
@@ -625,7 +627,7 @@ def jogar_jogador(content: Content, var: dict, estrategia: str, rng: Random, n_r
         create_adoption(content, save, rng, res, nos)
         novos = list(save.pending_adoption["cats"]) if save.pending_adoption else []
         for c in novos:
-            adopt(content, save, c.id)
+            adopt(content, save, c.id, enforce_capacity=False)
         if estrategia != "nenhuma":
             iniciar_casais(content, save, estrategia, melhor, tempo_fn)
         perf = [c for c in save.cats if c.iv_atk == 5 and c.iv_hp == 5]

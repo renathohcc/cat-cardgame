@@ -67,7 +67,7 @@ def couple_save(content, father_breed=None, mother_breed=None, father_iv=(3, 3),
 
 def run_breed(content, s: SaveData, rng: Random):
     """Inicia M+F e passa 2 runs validas. Devolve o RunAftermath da 2a."""
-    start_breed(content, s, M, F)
+    start_breed(content, s, M, F, enforce_limits=False)
     advance_after_run(content, s, rng, 1)
     return advance_after_run(content, s, rng, 1)
 
@@ -177,7 +177,8 @@ def test_start_breed_tira_os_pais_do_deck(content):
 def test_start_breed_registra_runs_left_2(content):
     s = build(content)
     start_breed(content, s, M, F)
-    assert s.breeding == [{"male": M, "female": F, "runs_left": 2}]
+    assert s.breeding == [{"male": M, "female": F, "runs_left": 2, "ration": None,
+                           "ration_choice": None}]
 
 
 def test_start_breed_atualiza_breeding_status(content):
@@ -209,14 +210,14 @@ def test_start_breed_com_poucos_adultos_levanta_e_nao_muda_o_save(content):
     s = build(content, 13)
     antes = save_to_dict(s)
     with pytest.raises(IllegalAction):
-        start_breed(content, s, M, F)
+        start_breed(content, s, M, F, enforce_limits=False)
     assert save_to_dict(s) == antes
 
 
 def test_dois_casais_simultaneos_com_16_adultos(content):
     s = build(content, 16)
-    start_breed(content, s, M, F)
-    start_breed(content, s, cid(3), cid(4))
+    start_breed(content, s, M, F, enforce_limits=False)
+    start_breed(content, s, cid(3), cid(4), enforce_limits=False)
     assert len(s.breeding) == 2
     assert not can_breed(content, s, cid(5), cid(6))[0]  # sobrariam 10
 
@@ -309,8 +310,8 @@ def test_runs_zero_nos_nao_fazem_filhote_crescer_apos_nascer(content):
 
 def test_couples_done_com_dois_casais_na_mesma_run(content):
     s = build(content, 16)
-    start_breed(content, s, M, F)
-    start_breed(content, s, cid(3), cid(4))
+    start_breed(content, s, M, F, enforce_limits=False)
+    start_breed(content, s, cid(3), cid(4), enforce_limits=False)
     rng = Random(11)
     advance_after_run(content, s, rng, 2)
     out = advance_after_run(content, s, rng, 2)
@@ -321,9 +322,9 @@ def test_couples_done_com_dois_casais_na_mesma_run(content):
 def test_casais_com_inicios_diferentes_nascem_em_runs_diferentes(content):
     s = build(content, 16)
     rng = Random(12)
-    start_breed(content, s, M, F)
+    start_breed(content, s, M, F, enforce_limits=False)
     advance_after_run(content, s, rng, 1)
-    start_breed(content, s, cid(3), cid(4))
+    start_breed(content, s, cid(3), cid(4), enforce_limits=False)
     out = advance_after_run(content, s, rng, 1)
     assert out.couples_done == [(M, F)]
     assert len(s.breeding) == 1 and s.breeding[0]["runs_left"] == 1
@@ -476,8 +477,8 @@ def test_ids_novos_unicos_e_next_cat_id_avanca(content):
     s = build(content, 16)
     antes = {c.id for c in s.cats}
     nid = s.next_cat_id
-    start_breed(content, s, M, F)
-    start_breed(content, s, cid(3), cid(4))
+    start_breed(content, s, M, F, enforce_limits=False)
+    start_breed(content, s, cid(3), cid(4), enforce_limits=False)
     rng = Random(21)
     advance_after_run(content, s, rng, 1)
     out = advance_after_run(content, s, rng, 1)
@@ -661,7 +662,7 @@ def save_com_breed_e_filhotes(content) -> SaveData:
     s = build(content, 18)
     rng = Random(60)
     run_breed(content, s, rng)                      # filhotes nascidos
-    start_breed(content, s, cid(3), cid(4))        # casal em andamento
+    start_breed(content, s, cid(3), cid(4), enforce_limits=False)        # casal em andamento
     advance_after_run(content, s, rng, 1)
     return s
 
@@ -807,7 +808,7 @@ def test_simulacao_de_50_runs_com_adocao_e_breed_mantem_invariantes(content):
         create_adoption(content, s, rng, resultado, nos)
         while s.pending_adoption:
             pend = s.pending_adoption["cats"][0]
-            adopt(content, s, pend.id)
+            adopt(content, s, pend.id, enforce_capacity=False)
         _invariantes(content, s)
         # doa filhotes/adultos excedentes de vez em quando
         for c in list(s.cats):
@@ -823,7 +824,7 @@ def test_simulacao_de_50_runs_com_adocao_e_breed_mantem_invariantes(content):
         for m in machos[:2]:
             for f in femeas[:2]:
                 if can_breed(content, s, m.id, f.id)[0]:
-                    start_breed(content, s, m.id, f.id)
+                    start_breed(content, s, m.id, f.id, enforce_limits=False)
                     break
         _invariantes(content, s)
     assert nascidos > 0 and crescidos > 0, (nascidos, crescidos)

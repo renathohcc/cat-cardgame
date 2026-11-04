@@ -6,7 +6,7 @@ import pygame
 from ui import layout_hub as LH
 from ui.pen_geometry import PenGeometry
 
-BUTTONS = ("start", "colecao", "adocao", "breed", "menu")      # ordem do painel
+BUTTONS = ("start", "colecao", "adocao", "breed", "loja", "menu")      # ordem do painel
 
 
 def panel_rect(geo: PenGeometry | None = None) -> pygame.Rect:
@@ -20,19 +20,24 @@ def area_rect(geo: PenGeometry | None = None) -> pygame.Rect:
 def button_rect(name: str, geo: PenGeometry | None = None) -> pygame.Rect:
     p = panel_rect(geo)
     x, w = p.x + 12, p.w - 24
-    ys = {"start": 196, "colecao": 262, "adocao": 312, "breed": 362, "menu": p.h - 56}
-    hs = {"start": 52, "colecao": 40, "adocao": 40, "breed": 40, "menu": 40}
+    ys = {"start": 196, "colecao": 244, "adocao": 282, "breed": 320, "loja": 358, "menu": p.h - 56}
+    hs = {"start": 44, "colecao": 34, "adocao": 34, "breed": 34, "loja": 34, "menu": 40}
     return pygame.Rect(x, p.y + ys[name], w, hs[name])
 
 
 def stats_rect(geo: PenGeometry | None = None) -> pygame.Rect:
     p = panel_rect(geo)
-    return pygame.Rect(p.x + 12, p.y + 56, p.w - 24, 120)
+    return pygame.Rect(p.x + 12, p.y + 48, p.w - 24, 80)
+
+
+def prestige_rect(geo: PenGeometry | None = None) -> pygame.Rect:
+    p = panel_rect(geo)
+    return pygame.Rect(p.x + 12, p.y + 138, p.w - 24, 52)
 
 
 def hint_rect(geo: PenGeometry | None = None) -> pygame.Rect:
     p = panel_rect(geo)
-    return pygame.Rect(p.x + 12, p.y + 410, p.w - 24, 42)
+    return pygame.Rect(p.x + 12, p.y + 398, p.w - 24, 50)
 
 
 FICHA_W, FICHA_H = 286, 312

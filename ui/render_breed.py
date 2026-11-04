@@ -99,47 +99,115 @@ def _kitten_panel(surf: pygame.Surface, bc: BreedController) -> None:
         font.draw(surf, f"+{len(ks) - LB.KITTENS_VISIBLE}", p.right - 10, p.y + 10, C["dim"], 1, "right")
 
 
-def _side_panel(surf: pygame.Surface, bc: BreedController, ui: UIState) -> None:
-    p = LB.side_panel()
-    panel(surf, p)
+def _couple_boxes(surf: pygame.Surface, bc: BreedController, p: pygame.Rect) -> None:
     x, w = p.x + 12, p.w - 24
-    font.draw(surf, "CASAL", x, p.y + 12, C["warn"], 1)
+    font.draw(surf, "CASAL", x, p.y + 10, C["warn"], 1)
+    font.draw(surf, f"{bc.couples_text()}  {bc.slots_text}", p.right - 12, p.y + 10, C["dim"], 1, "right")
     colw = (w - 8) // 2
     for k, side in enumerate(("M", "F")):
         cat = bc.selected(side)
         cx = x + k * (colw + 8)
-        box = pygame.Rect(cx, p.y + 36, colw, 138)
+        box = pygame.Rect(cx, p.y + 30, colw, 112)
         pygame.draw.rect(surf, C["slot"], box, border_radius=4)
         pygame.draw.rect(surf, sex_color(side), box, 1, border_radius=4)
         Wd.sex_badge(surf, box.x + 12, box.y + 12, side)
         if cat is None:
-            font.draw(surf, "escolha", box.centerx, box.y + 62, C["dim"], 1, "center")
+            font.draw(surf, "escolha", box.centerx, box.y + 50, C["dim"], 1, "center")
             continue
-        Wd.cat_art(surf, cat.breed, pygame.Rect(box.centerx - 48, box.y + 4, 96, 96), bg=C["slot"])
-        text_fit(surf, bc.label(cat), box.centerx, box.y + 104, C["text"], box.w - 8, "center")
-        font.draw(surf, font.fit(bc.breed_name(cat), box.w - 8), box.centerx, box.y + 122, Wd.breed_color(cat.breed), 1, "center")
-    y = p.y + 188
-    odds = bc.breed_odds()
-    if odds:
-        font.draw(surf, font.fit("Raça provável do filhote:", w), x, y, C["dim"], 1)
-        y += 15
-        for pct, name in odds[:3]:
-            text_fit(surf, f"{pct}% {name}", x, y, C["text"], w, "left")
-            y += 15
-    else:
-        y = Wd.wrap_lines(surf, "Raça do filhote: escolha o casal.", x, y, w, C["dim"], 1, 2, 14)
-    y += 4
-    y = Wd.wrap_lines(surf, bc.litter_text(), x, y, w, C["text"], 1, 1, 15)
-    y = Wd.wrap_lines(surf, bc.time_text(), x, y, w, C["text"], 1, 1, 15)
-    y += 4
+        Wd.cat_art(surf, cat.breed, pygame.Rect(box.centerx - 32, box.y + 4, 64, 64), bg=C["slot"])
+        text_fit(surf, bc.label(cat), box.centerx, box.y + 72, C["text"], box.w - 8, "center")
+        font.draw(surf, font.fit(bc.breed_name(cat), box.w - 8), box.centerx, box.y + 90, Wd.breed_color(cat.breed), 1, "center")
+
+
+def _ration_chips(surf: pygame.Surface, bc: BreedController, p: pygame.Rect, ui: UIState) -> None:
+    font.draw(surf, Wd.RATION_RULE.upper(), p.x + 12, p.y + 150, C["dim"], 1)
+    for i, (rid, label, stock) in enumerate(bc.ration_options()):
+        r = LB.ration_chip(i)
+        on = bc.ration == rid
+        usable = rid is None or stock > 0
+        txt = label if rid is None else f"{label} x{stock}"
+        button(surf, r, txt, ui.mouse, enabled=usable, base=(46, 120, 80) if on else C["card"],
+               edge=WHITE if on else C["panel_edge"])
+    if bc.needs_choice and bc.pair() is not None:
+        font.draw(surf, "FIXAR QUAL IV?", p.x + 12, p.y + 226, C["dim"], 1)
+        for i, (stat, parent) in enumerate(LB.CHOICES):
+            on = bc.choice == (stat, parent)
+            txt = f"{stat.upper()} DO PAI" if parent == "father" else f"{stat.upper()} DA MÃE"
+            button(surf, LB.choice_chip(i), txt, ui.mouse, base=(46, 120, 80) if on else C["card"],
+                   edge=WHITE if on else C["panel_edge"])
+
+
+def _side_panel(surf: pygame.Surface, bc: BreedController, ui: UIState) -> None:
+    p = LB.side_panel()
+    panel(surf, p)
+    _couple_boxes(surf, bc, p)
+    _ration_chips(surf, bc, p, ui)
     ok, motivo = bc.verdict()
+    vr = LB.verdict_rect(bc.needs_choice and bc.pair() is not None)
     if not ok:
-        Wd.wrap_lines(surf, motivo, x, y, w, C["warn"] if bc.pair() else C["dim"], 1, 4, 14)
+        Wd.wrap_lines(surf, motivo, vr.x, vr.y, vr.w, C["warn"] if bc.pair() else C["dim"], 1,
+                      max(1, vr.h // 14), 14)
     else:
-        font.draw(surf, "Casal válido.", x, y, C["good"], 1)
+        font.draw(surf, "Casal válido.", vr.x, vr.y, C["good"], 1)
+        if bc.basket:
+            Wd.wrap_lines(surf, "Filhotes vão para a cesta até abrir o cercadinho.", vr.x, vr.y + 16, vr.w,
+                          C["dim"], 1, 2, 14)
     b = LB.action_buttons()
     button(surf, b["start"], "INICIAR BREED", ui.mouse, enabled=ok, base=(46, 120, 80))
     button(surf, b["back"], "VOLTAR (ESC)", ui.mouse, base=C["card"])
+
+
+def _pct(p: float) -> int:
+    return round(p * 100)
+
+
+def _iv_chart(surf: pygame.Surface, x: int, y: int, label: str, color, dist: dict[int, float], fixed) -> None:
+    font.draw(surf, label, x + 12, y + 9, color, 1)
+    top = max(dist.values()) if dist else 1.0
+    for k, iv in enumerate(sorted(dist)):
+        cx = x + 58 + k * 44
+        h = max(2, round(18 * dist[iv] / top)) if dist[iv] > 0 else 0
+        pygame.draw.rect(surf, C["slot"], (cx, y, 34, 18))
+        if h:
+            pygame.draw.rect(surf, color if dist[iv] == top else mix_c(color, C["slot"], 0.45), (cx, y + 18 - h, 34, h))
+        font.draw(surf, str(iv), cx + 17, y + 4, WHITE if dist[iv] else C["slot_edge"], 1, "center")
+        font.draw(surf, f"{_pct(dist[iv])}%", cx + 17, y + 19, C["text"] if dist[iv] else C["slot_edge"], 1, "center")
+
+
+def _odds_panel(surf: pygame.Surface, bc: BreedController, od) -> None:
+    """Previa de chances (core: breed_odds): raca, cada IV, ninhada, efeito da racao e tempo."""
+    p = LB.odds_panel()
+    panel(surf, p)
+    x, w = p.x + 12, p.w - 24
+    font.draw(surf, "PRÉVIA DE CHANCES", x, p.y + 8, C["warn"], 1)
+    items = sorted(od.breed.items(), key=lambda kv: -kv[1])
+    bar = pygame.Rect(x, p.y + 24, w, 10)
+    cx = bar.x
+    for k, (bid, pr) in enumerate(items):
+        seg = bar.w - (cx - bar.x) if k == len(items) - 1 else round(bar.w * pr)
+        pygame.draw.rect(surf, Wd.breed_color(bid), (cx, bar.y, seg, bar.h))
+        cx += seg
+    pygame.draw.rect(surf, C["panel_edge"], bar, 1)
+    for k, (bid, pr) in enumerate(items[:2]):
+        txt = font.fit(f"{_pct(pr)}% {bc.breed_name_of(bid)}", w // 2 - 4)
+        font.draw(surf, txt, x if k == 0 else p.right - 12, p.y + 37, Wd.breed_color(bid), 1, "left" if k == 0 else "right")
+    _iv_chart(surf, p.x, p.y + 60, "ATK", C["atk"], od.iv_atk, od.fixed.get("atk"))
+    _iv_chart(surf, p.x, p.y + 100, "HP", C["hp"], od.iv_hp, od.fixed.get("hp"))
+    y = p.y + 142
+    avg = f"{od.litter_expected:.1f}".replace(".", ",")
+    lines = [(f"Ninhada: {od.litter_min} a {od.litter_max} (média {avg})", C["text"]),
+             (f"Mutação por IV: {_pct(od.mutation)}%", C["good"] if bc.ration and od.mutation > 0.1 else C["text"]),
+             (f"Tempo: {od.runs} run{'s' if od.runs != 1 else ''}"
+              + (f" (sem ração: {od.runs_without_ration})" if od.runs != od.runs_without_ration else ""),
+              C["good"] if od.runs != od.runs_without_ration else C["text"])]
+    fx = [f"{k.upper()} fixado em {v}" for k, v in od.fixed.items() if v is not None]
+    if fx:
+        lines.append((" · ".join(fx) + ", ninhada toda", C["good"]))
+    elif bc.basket:
+        lines.append(("Filhotes vão para a cesta.", C["dim"]))
+    for ln, colr in lines[:4]:
+        font.draw(surf, font.fit(ln, w), x, y, colr, 1)
+        y += 14
 
 
 def draw_breed(surf: pygame.Surface, bc: BreedController, ui: UIState) -> None:
@@ -149,7 +217,11 @@ def draw_breed(surf: pygame.Surface, bc: BreedController, ui: UIState) -> None:
     for side in ("M", "F"):
         _list(surf, bc, side, ui)
     _breeding_panel(surf, bc, ui)
-    _kitten_panel(surf, bc)
+    od = bc.odds()
+    if od is not None:
+        _odds_panel(surf, bc, od)
+    else:
+        _kitten_panel(surf, bc)
     _side_panel(surf, bc, ui)
     Wd.toast(surf, bc.toast, H - 40)
 

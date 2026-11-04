@@ -151,7 +151,7 @@ def test_listas_so_tem_adultos_disponiveis_do_sexo_certo(content, tmp_path):
     descanso.rest_runs_left = 1
     m = [c.id for c in s.cats if c.sex == "M" and c.stage == "adult"][1]
     f = [c.id for c in s.cats if c.sex == "F" and c.rest_runs_left == 0][1]
-    start_breed(content, s, m, f)
+    start_breed(content, s, m, f, enforce_limits=False)
     machos = {r.cat.id for r in bc.rows("M")}
     femeas = {r.cat.id for r in bc.rows("F")}
     assert kit.id not in machos and m not in machos and f not in femeas
@@ -207,7 +207,8 @@ def test_iniciar_breed_grava_e_o_save_relido_confere(content, tmp_path):
     escolher(bc, m, f)
     bc.click(("start",))
     lido = read_save(p, content)
-    assert lido.breeding == [{"male": m, "female": f, "runs_left": 2}]
+    assert lido.breeding == [{"male": m, "female": f, "runs_left": 2, "ration": None,
+                              "ration_choice": None}]
     assert m not in lido.deck and f not in lido.deck
     assert bc.sel == {"M": None, "F": None}
     assert bc.toast is not None and bc.toast.kind == "info"

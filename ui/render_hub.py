@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pygame
 
-from ui import font, layout_hub as LH, sprites, widgets as Wd
+from ui import font, layout_hub as LH, sprites, timing as timing_mod, widgets as Wd
 from ui.adoption_controller import AdoptionController
 from ui.collection_controller import CollectionController
 from ui.hub_controller import SHORT_RUN_TEXT, HubController
@@ -186,6 +186,10 @@ def draw_detail(surf: pygame.Surface, col: CollectionController, ui: UIState,
     for lab, fill, val in (("ATK", C["atk"], st.atk), ("HP", C["hp"], st.hp), ("CUSTO", C["cost"], st.cost)):
         cx = Wd.stat_pill(surf, cx, y, fill, lab, str(val), 82).right + 6
     Wd.keyword_row(surf, x, y + 28, d.right - 12, col.keyword_names(cat), 1)
+    iy = LH.donate_button(d).y - 34            # linhagem e historico (ficha 10a)
+    pygame.draw.line(surf, C["slot_edge"], (x, iy - 4), (d.right - 12, iy - 4))
+    font.draw(surf, font.fit(col.lineage_text(cat), d.w - 24), x, iy, C["female"], 1)
+    font.draw(surf, font.fit(col.history_text(cat), d.w - 24), x, iy + 16, C["dim"], 1)
     quiet = col.editing or col.confirm_donate
     m = (-100, -100) if quiet else ui.mouse
     button(surf, LH.rename_button(d), "RENOMEAR", m)
@@ -262,6 +266,8 @@ def draw_adoption(surf: pygame.Surface, ad: AdoptionController, ui: UIState) -> 
     n = len(ad.cats())
     font.draw(surf, font.fit(f"{ad.summary()}. Adotar ou doar cada gato.", W - 200), 24, 56, C["dim"], 1)
     font.draw(surf, f"Restam {n}", W - 24, 56, C["text"], 1, "right")
+    font.draw(surf, ad.slots_text + (" (cheio)" if ad.kennel_full else ""), W - 24, 72,
+              C["warn"] if ad.kennel_full else C["dim"], 1, "right")
     if ad.note:
         font.draw(surf, font.fit(ad.note, 420), W - 24, 38, C["warn"], 1, "right")
     for i, cat in enumerate(ad.visible()):
@@ -276,6 +282,10 @@ def draw_adoption(surf: pygame.Surface, ad: AdoptionController, ui: UIState) -> 
         button(surf, nav["next"], "PRÓX >", ui.mouse, enabled=ad.page < ad.pages - 1, base=C["card"])
         font.draw(surf, f"Pág. {ad.page + 1}/{ad.pages}", nav["prev"].right + 16, nav["prev"].centery - font.CAP_H // 2, C["dim"], 1)
     font.draw(surf, "ESC volta ao criatório", W // 2, 20, C["slot_edge"], 1, "center")
+    if ad.room_for:
+        from ui.render_adopt import draw_room
+        draw_room(surf, ad, ui)
+        return
     Wd.toast(surf, ad.toast, H - 90)
 
 
@@ -327,14 +337,66 @@ def draw_offer_card(surf: pygame.Surface, ad: AdoptionController, cat, i: int, u
         cx = Wd.stat_pill(surf, cx, y, fill, lab, str(val), 62).right + 6
     Wd.keyword_row(surf, x, y + 28, r.right - 8, ad.keyword_names(cat), 1)
     b = LH.adopt_buttons(i)
-    button(surf, b["adopt"], "ADOTAR", ui.mouse, base=(46, 120, 80))
+    button(surf, b["adopt"], "ADOTAR (SEM VAGA)" if ad.kennel_full else "ADOTAR", ui.mouse, base=(46, 120, 80))
     button(surf, b["donate"], f"DOAR +{ad.value_of(cat)}", ui.mouse, base=(120, 86, 28))
 
 
 # ------------------------------------------------------------------ resultado
+EARN_NAME = {"batalha": "Batalhas vencidas", "elite": "Elites vencidas", "chefe": "Chefes vencidos",
+             "primeira-vitoria-liga": "1ª vitória da liga 1"}
+
+
+def draw_summary(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
+    """Fim de run (10a): ganhos por fonte, barra de proxima meta e Prestigio."""
+    from core import next_goal, prestige_info
+    from ui import render_eco
+    sm = hub.summary
+    st = sm.settlement
+    p = pygame.Rect(150, 100, W - 300, 100)
+    col = C["good"] if hub.result_win else C["bad"]
+    panel(surf, p, col)
+    Wd.leader_art(surf, "heroi", pygame.Rect(p.x - 120, p.y + 2, 96, 96), C["player"], 96)
+    y = Wd.wrap_lines(surf, hub.result_text, p.x + 20, p.y + 14, p.w - 40, C["text"], 1, 2, 18, "center") + 4
+    for line in hub.result_detail[:2]:
+        y = Wd.wrap_lines(surf, line, p.x + 20, y, p.w - 40, C["dim"], 1, 2, 16, "center")
+    g = pygame.Rect(150, 208, 270, 156)
+    panel(surf, g)
+    font.draw(surf, "GANHOS DA RUN", g.x + 12, g.y + 10, C["warn"], 1)
+    yy = g.y + 34
+    for src, coins in st.earnings:
+        font.draw(surf, EARN_NAME.get(src, src), g.x + 12, yy, C["text"], 1)
+        render_eco.coins_text(surf, g.right - 12, yy, coins, C["good"], "right")
+        yy += 22
+    if not st.earnings:
+        font.draw(surf, "Nenhuma vitória desta vez.", g.x + 12, yy, C["dim"], 1)
+    k = min(1.0, sm.age / max(1e-6, timing_mod.current().economy.coin_tick))
+    pygame.draw.line(surf, C["slot_edge"], (g.x + 12, g.bottom - 34), (g.right - 12, g.bottom - 34))
+    font.draw(surf, "TOTAL", g.x + 12, g.bottom - 26, C["text"], 1)
+    render_eco.coins_text(surf, g.right - 12, g.bottom - 26, round(st.coins * k), C["warn"], "right")
+    goal = pygame.Rect(432, 208, W - 150 - 432, 74)
+    render_eco.draw_goal_bar(surf, goal, next_goal(hub.content, hub.save), hub.save.coins, sm.age)
+    pr = pygame.Rect(432, 290, goal.w, 74)
+    panel(surf, pr, C["effect"] if st.prestige_up else None)
+    if st.prestige_up:
+        render_eco.icon(surf, "prestigio", pr.x + 14, pr.y + 12, 3)
+        font.draw(surf, "PRESTÍGIO SUBIU!", pr.x + 74, pr.y + 14, C["warn"], 1)
+        font.draw(surf, f"Nível {st.prestige_before} para {st.prestige_after}", pr.x + 74, pr.y + 36, C["effect"], 1)
+    else:
+        render_eco.prestige_bar(surf, pygame.Rect(pr.x + 12, pr.y + 8, pr.w - 24, 40), st.prestige_after,
+                                prestige_info(hub.content, hub.save))
+
+
 def draw_result(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
     col = C["good"] if hub.result_win else C["bad"]
-    Wd.title(surf, "RUN ENCERRADA", W // 2, 40, col, 3, "center")
+    Wd.title(surf, "RUN ENCERRADA", W // 2, 28 if hub.summary else 40, col, 3, "center")
+    if hub.summary is not None:
+        if hub.short_run:
+            font.draw(surf, SHORT_RUN_TEXT, W // 2, 74, C["warn"], 1, "center")
+        draw_summary(surf, hub, ui)
+        button(surf, LH.result_button(), "VOLTAR AO CRIATÓRIO", ui.mouse)
+        font.draw(surf, "Enter ou ESC volta", W // 2, LH.result_button().bottom + 16, C["dim"], 1, "center")
+        Wd.toast(surf, hub.toast)
+        return
     if hub.short_run:
         Wd.wrap_lines(surf, SHORT_RUN_TEXT, 120, 100, W - 240, C["warn"], 1, 2, 16, "center")
     p = pygame.Rect(150, 150, W - 300, 200)
@@ -356,6 +418,13 @@ def draw_hub_frame(surf: pygame.Surface, hub: HubController, ui: UIState) -> Non
         draw_run_frame(surf, hub.rc, ui)
         return
     Wd.fill_background(surf)
+    _draw_mode(surf, hub, ui)
+    if hub.seal is not None:
+        from ui import render_eco
+        render_eco.draw_seal(surf, hub.seal[0], hub.seal[1])
+
+
+def _draw_mode(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
     if hub.mode == "menu":
         draw_menu(surf, hub, ui)
     elif hub.mode == "colecao":
@@ -371,5 +440,8 @@ def draw_hub_frame(surf: pygame.Surface, hub: HubController, ui: UIState) -> Non
     elif hub.mode == "cercado":
         from ui.render_pen import draw_pen
         draw_pen(surf, hub, ui)
+    elif hub.mode == "loja":
+        from ui import render_eco
+        render_eco.draw_shop(surf, hub.shop, ui)
     else:
         draw_result(surf, hub, ui)

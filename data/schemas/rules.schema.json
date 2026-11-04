@@ -265,12 +265,28 @@
         "pen_zone_caps": {
           "type": "object",
           "properties": {
-            "adultos": {"type": "integer", "minimum": 1},
-            "breed": {"type": "integer", "minimum": 1},
-            "filhotes": {"type": "integer", "minimum": 1}
+            "adultos": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "breed": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "filhotes": {
+              "type": "integer",
+              "minimum": 1
+            }
           },
-          "required": ["adultos", "breed", "filhotes"],
+          "required": [
+            "adultos",
+            "breed",
+            "filhotes"
+          ],
           "additionalProperties": false
+        },
+        "kitten_cap_over_limit_allowed": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -341,6 +357,10 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "donation_bred_multiplier": {
+          "type": "number",
+          "minimum": 0
         }
       },
       "required": [
@@ -352,9 +372,160 @@
         "pity_runs",
         "high_iv_sum",
         "donation_by_iv_sum",
-        "kitten_donation_factor"
+        "kitten_donation_factor",
+        "donation_bred_multiplier"
       ],
       "additionalProperties": false
+    },
+    "economy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coins_battle_node",
+        "coins_elite_node",
+        "coins_boss_node",
+        "league1_first_win_bonus"
+      ],
+      "properties": {
+        "coins_battle_node": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coins_elite_node": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coins_boss_node": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "league1_first_win_bonus": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "prestige": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "levels"
+      ],
+      "properties": {
+        "levels": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "level",
+              "enabled",
+              "milestone"
+            ],
+            "properties": {
+              "level": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "milestone": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "type"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "start"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "type",
+                      "league"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "win_league"
+                      },
+                      "league": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "type",
+                      "count"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "distinct_breeds"
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "type",
+                      "count",
+                      "min_iv_sum"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "distinct_breeds_min_iv"
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "min_iv_sum": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "type",
+                      "value"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "pressure"
+                      },
+                      "value": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   },
   "required": [
@@ -365,7 +536,9 @@
     "deadlock",
     "breed",
     "meta",
-    "adoption"
+    "adoption",
+    "economy",
+    "prestige"
   ],
   "additionalProperties": false,
   "$schema": "https://json-schema.org/draft/2020-12/schema",

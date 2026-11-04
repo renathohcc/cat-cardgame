@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "cats": [
     {
       "id": "c-000123",
@@ -11,7 +11,14 @@
       "iv_hp": 2,
       "stage": "adult",
       "rest_runs_left": 0,
-      "runs_as_kitten": 0
+      "runs_as_kitten": 0,
+      "generation": 1,
+      "parents": [],
+      "history": {
+        "runs": 0,
+        "duels_won": 0,
+        "bosses_defeated": 0
+      }
     }
   ],
   "deck": [
@@ -23,7 +30,9 @@
     {
       "male": "c-1",
       "female": "c-2",
-      "runs_left": 2
+      "runs_left": 2,
+      "ration": null,
+      "ration_choice": null
     }
   ],
   "pity": {
@@ -54,10 +63,26 @@
         "iv_hp": 2,
         "stage": "kitten",
         "rest_runs_left": 0,
-        "runs_as_kitten": 1
+        "runs_as_kitten": 1,
+        "generation": 1,
+        "parents": [],
+        "history": {
+          "runs": 0,
+          "duels_won": 0,
+          "bosses_defeated": 0
+        }
       }
     ],
     "result": "vitoria",
     "nodes_cleared": 3
+  },
+  "prestige": 1,
+  "areas_unlocked": [],
+  "rations": {},
+  "decorations_owned": [],
+  "first_league_win_claimed": false,
+  "lifetime": {
+    "runs_completed": 0,
+    "duels_won": 0
   }
 }

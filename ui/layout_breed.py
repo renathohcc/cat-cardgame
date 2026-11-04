@@ -59,8 +59,45 @@ def action_buttons() -> dict[str, pygame.Rect]:
             "back": pygame.Rect(p.x + 10, p.bottom - 52, p.w - 20, 40)}
 
 
+def odds_panel() -> pygame.Rect:
+    """Previa de chances: ocupa o lugar do painel de filhotes enquanto ha um casal escolhido."""
+    return kitten_panel()
+
+
+CHIP_H = 26
+
+
+def ration_chip(i: int) -> pygame.Rect:
+    p = side_panel()
+    w = (p.w - 24 - 6) // 2
+    return pygame.Rect(p.x + 12 + (i % 2) * (w + 6), p.y + 166 + (i // 2) * (CHIP_H + 4), w, CHIP_H)
+
+
+CHOICES = (("atk", "father"), ("atk", "mother"), ("hp", "father"), ("hp", "mother"))
+
+
+def choice_chip(i: int) -> pygame.Rect:
+    p = side_panel()
+    w = (p.w - 24 - 6) // 2
+    return pygame.Rect(p.x + 12 + (i % 2) * (w + 6), p.y + 240 + (i // 2) * (CHIP_H + 4), w, CHIP_H)
+
+
+def verdict_rect(with_choice: bool) -> pygame.Rect:
+    p = side_panel()
+    top = 304 if with_choice else 232
+    return pygame.Rect(p.x + 12, p.y + top, p.w - 24, p.h - 112 - top - 6)
+
+
 def breed_hit(pos: tuple[int, int], male_ids: list[str], female_ids: list[str],
-              cancel_pairs: list[tuple[str, str]]) -> tuple | None:
+              cancel_pairs: list[tuple[str, str]], ration_ids: list | None = None,
+              choices: bool = False) -> tuple | None:
+    for i, rid in enumerate(ration_ids or []):
+        if ration_chip(i).collidepoint(pos):
+            return ("ration", rid)
+    if choices:
+        for i, (stat, parent) in enumerate(CHOICES):
+            if choice_chip(i).collidepoint(pos):
+                return ("choice", stat, parent)
     for side, ids in (("M", male_ids), ("F", female_ids)):
         for i, cid in enumerate(ids):
             if row_rect(side, i).collidepoint(pos):

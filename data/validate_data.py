@@ -211,11 +211,59 @@ def check_ui_timing(docs: dict[str, dict]) -> int:
     return 0
 
 
+def check_shop(docs: dict[str, dict]) -> int:
+    if "shop" not in docs or "rules" not in docs:
+        print("FALHA shop: arquivos ausentes ou inválidos")
+        return 1
+    shop, rules = docs["shop"], docs["rules"]
+    errors = 0
+
+    def fail(msg: str) -> None:
+        nonlocal errors
+        print(f"FALHA shop: {msg}")
+        errors += 1
+
+    areas = shop["areas"]
+    start = shop["start"]
+    if shop["max_slots"] != start["slots"] + sum(a["slots_bonus"] for a in areas):
+        fail("max_slots != start.slots + soma dos slots_bonus")
+    for name in ("areas", "rations", "decorations"):
+        ids = [x["id"] for x in shop[name]]
+        if len(ids) != len(set(ids)):
+            fail(f"ids repetidos em {name}")
+    area_ids = {a["id"] for a in areas}
+    for d in shop["decorations"]:
+        if d["area_required"] not in area_ids:
+            fail(f"decoração '{d['id']}': area_required '{d['area_required']}' inexistente")
+        if not 10 <= d["price"] <= 60:
+            fail(f"decoração '{d['id']}': preço fora de 10-60")
+    ordered = sorted(areas, key=lambda a: a["order"])
+    if [a["order"] for a in ordered] != list(range(1, len(areas) + 1)):
+        fail("order das áreas deve ser 1..N sem repetição")
+    if any(b["prestige_required"] < a["prestige_required"] for a, b in zip(ordered, ordered[1:])):
+        fail("Prestígio das áreas decresce com a ordem")
+    br = rules["breed"]
+    min_slots = rules["duel"]["deck_size"] + 2 + br["litter_max"]
+    if start["slots"] < min_slots:
+        fail(f"start.slots ({start['slots']}) < deck + casal + ninhada máxima ({min_slots})")
+    levels = [lv["level"] for lv in rules["prestige"]["levels"]]
+    if levels != sorted(set(levels)):
+        fail("níveis de Prestígio fora de ordem ou repetidos")
+    top = max(levels)
+    for item in areas + shop["rations"]:
+        if item["prestige_required"] > top:
+            fail(f"'{item['id']}': Prestígio acima do máximo {top}")
+    if not errors:
+        print("ok shop")
+    return errors
+
+
 def main() -> int:
     errors, docs = check_schemas()
     errors += check_cross_refs(docs)
     errors += check_run(docs)
     errors += check_ui_timing(docs)
+    errors += check_shop(docs)
     return 1 if errors else 0
 
 

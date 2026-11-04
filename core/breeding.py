@@ -1,4 +1,4 @@
-"""Breed e filhotes (Fase 5c). Sem Criatorio visual, racao ou racas hibridas."""
+"""Breed e filhotes (Fase 5c) + racao, casais paralelos e gatil cheio (Fase 10a)."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -6,11 +6,17 @@ from random import Random
 from typing import Any
 
 from core.collection import available_cats, get_cat
+from core.kennel import couples_allowed, kennel_over_limit
+from core.prestige import update_prestige
+from core.rations import (IvChoice, breed_runs_for, check_choice, choice_from_dict,
+                          choice_to_dict, mutation_for)
 from core.save import SaveData, format_cat_id, register_dex
+from core.shop import ration_stock
 from core.types import Cat, Content, IllegalAction
 
-__all__ = ["RunAftermath", "can_breed", "start_breed", "advance_after_run",
-           "breeding_status", "cancel_breed", "breed_cfg"]
+__all__ = ["RunAftermath", "can_breed", "can_start_breed", "start_breed",
+           "advance_after_run", "breeding_status", "cancel_breed", "breed_cfg",
+           "initial_runs"]
 
 
 @dataclass
@@ -31,6 +37,7 @@ def breed_cfg(content: Content) -> dict[str, Any]:
         "mother_breed_chance": _num(cfg.get("mother_breed_chance"), 0.6),
         "min_nodes_for_run_count": int(_num(cfg.get("min_nodes_for_run_count"), 1)),
         "min_adults_after_breed": int(_num(cfg.get("min_adults_after_breed"), 12)),
+        "iv_max": int((content.rules.get("stats", {}) or {}).get("iv_max", 5)),
     }
 
 
@@ -66,53 +73,120 @@ def can_breed(content: Content, save: SaveData, male_id: str,
     return True, ""
 
 
-def start_breed(content: Content, save: SaveData, male_id: str, female_id: str) -> None:
+def initial_runs(content: Content, ration_id: str | None = None) -> int:
+    """Runs de um breed recem-aberto (a Racao Veloz encurta)."""
+    return breed_runs_for(content, breed_cfg(content)["base_runs"], ration_id)
+
+
+def can_start_breed(content: Content, save: SaveData, male_id: str, female_id: str,
+                    ration: str | None = None,
+                    choice: IvChoice | None = None) -> tuple[bool, str]:
+    """(ok, motivo): `can_breed` + gatil sem excesso + casais paralelos + racao."""
+    return _check_start(content, save, male_id, female_id, ration, choice, True)
+
+
+def _check_start(content: Content, save: SaveData, male_id: str, female_id: str,
+                 ration: str | None, choice: IvChoice | None,
+                 limits: bool) -> tuple[bool, str]:
     ok, reason = can_breed(content, save, male_id, female_id)
     if not ok:
+        return False, reason
+    try:
+        check_choice(content, ration, choice)
+    except IllegalAction as e:
+        return False, str(e)
+    if ration is not None and ration_stock(save, ration) < 1:
+        return False, "Sem essa ração no estoque."
+    if limits and content.shop:
+        if kennel_over_limit(content, save):
+            return False, "Gatil acima do limite: doe gatos antes de abrir outro breed."
+        if len(save.breeding) >= couples_allowed(content, save):
+            return False, "Todos os cercados de casal estão ocupados."
+    return True, ""
+
+
+def start_breed(content: Content, save: SaveData, male_id: str, female_id: str,
+                ration: str | None = None, choice: IvChoice | None = None,
+                enforce_limits: bool = True) -> None:
+    """Abre o breed. `ration` (id de shop.json) e opcional; gasta 1 do estoque e
+    grava no casal. A Racao Escolha exige `choice`. Por padrao (`enforce_limits=True`)
+    valem tambem o limite do gatil e `couples_allowed`; `False` desliga de forma
+    explicita (migracao, simulador, testes)."""
+    ok, reason = _check_start(content, save, male_id, female_id, ration, choice,
+                              enforce_limits)
+    if not ok:
         raise IllegalAction(reason)
+    if ration is not None:
+        save.rations[ration] = ration_stock(save, ration) - 1
     save.breeding.append({"male": male_id, "female": female_id,
-                          "runs_left": breed_cfg(content)["base_runs"]})
+                          "runs_left": initial_runs(content, ration),
+                          "ration": ration,
+                          "ration_choice": choice_to_dict(choice)})
     save.deck = [i for i in save.deck if i not in (male_id, female_id)]
 
 
 def cancel_breed(content: Content, save: SaveData, male_id: str, female_id: str) -> None:
-    """Cancela sem custo, so se ainda nao passou nenhuma run. Pais nao voltam ao deck."""
-    base = breed_cfg(content)["base_runs"]
+    """Cancela sem custo, so se ainda nao passou nenhuma run (a racao volta ao
+    estoque). Pais nao voltam ao deck."""
     for i, b in enumerate(save.breeding):
         if b["male"] == male_id and b["female"] == female_id:
-            if b["runs_left"] != base:
+            ration = b.get("ration")
+            if b["runs_left"] != initial_runs(content, ration):
                 raise IllegalAction("Breed já em andamento, não dá para cancelar.")
+            if ration is not None:
+                save.rations[ration] = ration_stock(save, ration) + 1
             save.breeding.pop(i)
             return
     raise IllegalAction("Casal não encontrado.")
 
 
-def breeding_status(save: SaveData) -> list[dict[str, Any]]:
-    """Para a UI: [{"male": Cat, "female": Cat, "runs_left": int}]."""
-    return [{"male": get_cat(save, b["male"]), "female": get_cat(save, b["female"]),
-             "runs_left": b["runs_left"]} for b in save.breeding]
+def breeding_status(save: SaveData, content: Content | None = None) -> list[dict[str, Any]]:
+    """Para a UI: [{"male": Cat, "female": Cat, "runs_left": int, "ration": id|None,
+    "choice": IvChoice|None}] (ration/choice so resolvem com `content`)."""
+    out = []
+    for b in save.breeding:
+        ration, choice = b.get("ration"), choice_from_dict(b.get("ration_choice"))
+        out.append({"male": get_cat(save, b["male"]), "female": get_cat(save, b["female"]),
+                    "runs_left": b["runs_left"], "ration": ration, "choice": choice})
+    return out
 
 
-def _kitten_iv(rng: Random, father_iv: int, mother_iv: int, mutation: float) -> int:
+def _kitten_iv(rng: Random, father_iv: int, mother_iv: int, mutation: float,
+               fixed: int | None = None, cap: int = 5) -> int:
+    if fixed is not None:        # Racao Escolha: valor do pai escolhido, sem mutacao
+        return fixed
     iv = father_iv if rng.random() < 0.5 else mother_iv
     if rng.random() < mutation:
-        iv = min(5, iv + 1)
+        iv = min(cap, iv + 1)
     return iv
 
 
+def _fixed_ivs(male: Cat, female: Cat, choice: IvChoice | None) -> dict[str, int | None]:
+    fixed: dict[str, int | None] = {"atk": None, "hp": None}
+    if choice is not None:
+        parent = male if choice.parent == "father" else female
+        fixed[choice.stat] = parent.iv_atk if choice.stat == "atk" else parent.iv_hp
+    return fixed
+
+
 def _birth(content: Content, save: SaveData, rng: Random, male: Cat, female: Cat,
-           cfg: dict[str, Any]) -> list[Cat]:
+           cfg: dict[str, Any], ration: str | None = None,
+           choice: IvChoice | None = None) -> list[Cat]:
     n = rng.randint(cfg["litter_min"], cfg["litter_max"])
+    mutation = mutation_for(content, cfg["mutation_chance"], ration)
+    fixed = _fixed_ivs(male, female, choice)
+    generation = max(male.generation, female.generation) + 1
     kittens: list[Cat] = []
     for _ in range(n):
         breed = female.breed if rng.random() < cfg["mother_breed_chance"] else male.breed
         sex = rng.choice(("M", "F"))
         nature = rng.choice(list(content.natures))
-        iv_atk = _kitten_iv(rng, male.iv_atk, female.iv_atk, cfg["mutation_chance"])
-        iv_hp = _kitten_iv(rng, male.iv_hp, female.iv_hp, cfg["mutation_chance"])
+        iv_atk = _kitten_iv(rng, male.iv_atk, female.iv_atk, mutation, fixed["atk"], cfg["iv_max"])
+        iv_hp = _kitten_iv(rng, male.iv_hp, female.iv_hp, mutation, fixed["hp"], cfg["iv_max"])
         cat = Cat(id=format_cat_id(save.next_cat_id), breed=breed, sex=sex,
                   nature=nature, iv_atk=iv_atk, iv_hp=iv_hp, stage="kitten",
-                  rest_runs_left=0, runs_as_kitten=0)
+                  rest_runs_left=0, runs_as_kitten=0, generation=generation,
+                  parents=[male.id, female.id])
         save.next_cat_id += 1
         save.cats.append(cat)
         register_dex(save, cat)
@@ -140,8 +214,10 @@ def advance_after_run(content: Content, save: SaveData, rng: Random,
         if b["runs_left"] > 0:
             remaining.append(b)
             continue
+        ration, choice = b.get("ration"), choice_from_dict(b.get("ration_choice"))
         out.born += _birth(content, save, rng, get_cat(save, b["male"]),
-                           get_cat(save, b["female"]), cfg)
+                           get_cat(save, b["female"]), cfg, ration, choice)
         out.couples_done.append((b["male"], b["female"]))
     save.breeding = remaining
+    update_prestige(content, save)     # filhotes podem completar o marco de racas
     return out

@@ -31,10 +31,14 @@ DEFAULTS: dict[str, Any] = {
     "energy": {"gem_stagger": 0.06},
     "fade": {"scene": 0.2},
     "boss_intro": {"duration": 2.4},
+    "economy": {"unlock_fade": 0.4, "unlock_fx_hold": 0.15, "sign_pulse_period": 1.4, "hud_flash": 0.9,
+                "seal_time": 2.6, "seal_pop": 0.35, "seal_fade": 0.4, "goal_fill": 0.9, "coin_tick": 0.5,
+                "area_toast": 3.0},
     "enemy_speed": {"options": {"1x": 1.0, "2x": 0.5, "rapido": 0.2}, "default": "1x"},
 }
 
-_POSITIVE = {("breathing", "period"), ("boss_intro", "duration")}          # precisam ser > 0
+_POSITIVE = {("breathing", "period"), ("boss_intro", "duration"), ("economy", "unlock_fade"),
+             ("economy", "sign_pulse_period"), ("economy", "seal_time"), ("economy", "goal_fill")}          # precisam ser > 0
 _UNIT = {("lunge", "reach")}                   # 0..1
 
 

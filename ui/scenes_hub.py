@@ -17,13 +17,17 @@ HUB_SCENES = ("menu", "menu_confirmar", "menu_corrompido", "colecao", "colecao_d
               "renomear", "resultado", "adocao", "adocao_vazia", "doar_confirmar")
 BREED_SCENES = ("criatorio", "criatorio_casal", "criatorio_recusado", "novidades")
 PEN_SCENES = ("criatorio_hub", "criatorio_hub_ficha", "criatorio_hub_adocao")
-ALL_SCENES = HUB_SCENES + BREED_SCENES + PEN_SCENES
+from ui.scenes_eco import ECON_SCENES, default_hour, make_scene as make_eco_scene   # noqa: E402
+
+ALL_SCENES = HUB_SCENES + BREED_SCENES + PEN_SCENES + ECON_SCENES
 PEN_SIM_SECONDS = 25.0          # tempo simulado antes do screenshot (deterministico por seed)
 
 
 def _big_save(hub: HubController) -> tuple[list, list]:
     """Save com 18 adultos (sobra para o breed), dois casais em breed e 2 filhotes (20 gatos...)."""
     content, save = hub.content, hub.save
+    if content.shop:                      # cenas antigas: quintal todo aberto (30 vagas), como antes da 10a
+        save.areas_unlocked = [a["id"] for a in content.shop["areas"]]
     base = list(save.cats)
     for k in range(6):
         c = replace(base[k], id=format_cat_id(save.next_cat_id), name=None,
@@ -104,7 +108,7 @@ def make(seed: int, name: str, hora: str | None = None) -> tuple[HubController, 
     if name not in ALL_SCENES:
         raise SystemExit(f"cena desconhecida: {name} (use: {', '.join(ALL_SCENES)})")
     content = load_game_content()
-    hub = HubController(content, None, seed, ai_delay=0.0, clock=fixed_clock(hora or "12:00"))
+    hub = HubController(content, None, seed, ai_delay=0.0, clock=fixed_clock(hora or default_hour(name)))
     ui = UIState(t=0.2)
     if name == "menu_corrompido":
         hub.load_error = "JSON invalido: Expecting value: line 1 column 1 (char 0)"
@@ -112,6 +116,9 @@ def make(seed: int, name: str, hora: str | None = None) -> tuple[HubController, 
         return hub, ui
     hub.adopt_save(new_game(content, Random(seed)))
     hub.has_file = True
+    if name in ECON_SCENES:
+        make_eco_scene(hub, ui, name, seed)
+        return hub, ui
     if name in PEN_SCENES:
         _pen_scene(hub, ui, name, seed)
         return hub, ui

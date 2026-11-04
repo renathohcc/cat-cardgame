@@ -1,0 +1,147 @@
+{
+  "note": "floor = camada do tamanho exato do rect (abaixo dos gatos, revelada ao desbloquear); sorted = sprites ordenados por y (x,y = centro-base absoluto, anchor dentro do sprite); objects = ancoras de slots no formato do pen.json (coordenadas absolutas). Desenhar so depois do desbloqueio. Tinta do periodo: mesmo BLEND_MULT do fundo.",
+  "areas": {
+    "jardim-lagoa": {
+      "rect": [
+        48,
+        336,
+        192,
+        144
+      ],
+      "floor": "jardim-lagoa_floor.png",
+      "floor_anim": {
+        "file": "jardim-lagoa_floor_anim.png",
+        "frame_size": [
+          192,
+          144
+        ],
+        "frames": 4,
+        "fps": 3,
+        "loop": true
+      },
+      "sorted": [],
+      "objects": [
+        {
+          "kind": "lagoa",
+          "x": 156,
+          "y": 436,
+          "layer": "floor",
+          "slots": [
+            [
+              -60,
+              -22
+            ],
+            [
+              60,
+              -22
+            ],
+            [
+              0,
+              8
+            ]
+          ],
+          "slot_use": "play"
+        }
+      ]
+    },
+    "patio-casais-nobre": {
+      "rect": [
+        240,
+        336,
+        192,
+        144
+      ],
+      "floor": "patio-casais-nobre_floor.png",
+      "sorted": [],
+      "objects": [
+        {
+          "kind": "cama_casal_nobre",
+          "x": 336,
+          "y": 436,
+          "layer": "floor",
+          "slots": [
+            [
+              -24,
+              -14
+            ],
+            [
+              24,
+              -14
+            ]
+          ],
+          "slot_use": "sleep",
+          "note": "cama ja desenhada no floor; x,y = centro-base (convencao de cama_casal)"
+        }
+      ]
+    },
+    "pomar": {
+      "rect": [
+        304,
+        192,
+        128,
+        144
+      ],
+      "floor": "pomar_floor.png",
+      "sorted": [
+        {
+          "file": "arvore_grande.png",
+          "size": [
+            112,
+            96
+          ],
+          "anchor": [
+            56,
+            92
+          ],
+          "x": 368,
+          "y": 296
+        },
+        {
+          "file": "arvore_pequena.png",
+          "size": [
+            40,
+            46
+          ],
+          "anchor": [
+            20,
+            43
+          ],
+          "x": 326,
+          "y": 320
+        },
+        {
+          "file": "arvore_pequena.png",
+          "size": [
+            40,
+            46
+          ],
+          "anchor": [
+            20,
+            43
+          ],
+          "x": 410,
+          "y": 320
+        }
+      ],
+      "objects": [
+        {
+          "kind": "arvore_grande",
+          "x": 368,
+          "y": 296,
+          "layer": "sorted",
+          "slots": [
+            [
+              -34,
+              4
+            ],
+            [
+              34,
+              4
+            ]
+          ],
+          "slot_use": "sleep"
+        }
+      ]
+    }
+  }
+}

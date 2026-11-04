@@ -9,7 +9,8 @@ import math
 
 import pygame
 
-from ui import font, layout_pen as LP, pen_sprites, widgets as Wd
+from core import kennel_slots, occupied, prestige_info
+from ui import font, layout_pen as LP, lock_art, timing as timing_mod, pen_sprites, render_eco, render_lock, widgets as Wd
 from ui.daycycle import DayState, day_state
 from ui.hub_controller import HubController
 from ui.pen_controller import Heart, PenCat
@@ -142,6 +143,8 @@ def draw_object(surf: pygame.Surface, art: pen_sprites.PenArt, o, hovered: bool,
     x, y = int(o.spec.x + o.ox), int(o.spec.y + o.oy)
     if hovered and o.spec.slots:
         pygame.draw.ellipse(surf, C["warn"], pygame.Rect(x - 20, y - 6, 40, 11), 1)
+    if o.baked:                                    # arte ja desenhada no chao/sprite da area
+        return
     img = bed_frame(art, o) if o.is_bed else art.object_frame(o.kind, "use" if o.using else "idle", o.t)
     if img is not None:
         ax, ay = art.anchor(o.kind)
@@ -280,14 +283,23 @@ def draw_side(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
     sr = LP.stats_rect(geo)
     shown = len([c for c in hub.pen.cats if not c.leaving]) if hub.pen else 0
     full = col.can_start
-    rows = (("MOEDAS", str(save.coins), C["warn"]), ("GATOS", str(len(save.cats)), C["text"]),
+    occ, slots = occupied(save), kennel_slots(hub.content, save)
+    vagas_c = C["good"] if occ < slots else (C["warn"] if occ == slots else C["bad"])
+    if hub.hud_flash > 0:
+        vagas_c = mix_c(vagas_c, WHITE, min(1.0, hub.hud_flash / max(0.01, timing_mod.current().economy.hud_flash)))
+    rows = (("MOEDAS", str(save.coins), C["warn"]), ("VAGAS", f"{occ}/{slots}", vagas_c),
             ("DECK", f"{col.deck_count}/{col.deck_size}", C["good"] if full else C["warn"]),
             ("NO CERCADO", str(shown), C["dim"]))
     for i, (lab, val, colr) in enumerate(rows):
-        y = sr.y + i * 24
+        y = sr.y + i * 20
         font.draw(surf, lab, sr.x, y, C["dim"], 1)
-        font.draw(surf, val, sr.right, y, colr, 1, "right")
-        pygame.draw.line(surf, C["slot_edge"], (sr.x, y + 17), (sr.right, y + 17))
+        if lab == "MOEDAS":
+            render_eco.coins_text(surf, sr.right, y, save.coins, align="right")
+        else:
+            font.draw(surf, val, sr.right, y, colr, 1, "right")
+        pygame.draw.line(surf, C["slot_edge"], (sr.x, y + 15), (sr.right, y + 15))
+    pinfo = prestige_info(hub.content, save)
+    render_eco.prestige_bar(surf, LP.prestige_rect(geo), pinfo.level, pinfo)
     quiet = hub._modal_open()
     m = (-100, -100) if quiet else ui.mouse
     b = lambda n: LP.button_rect(n, geo)           # noqa: E731
@@ -299,6 +311,7 @@ def draw_side(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
         pygame.draw.rect(surf, mix_c(C["warn"], WHITE, glow), r.inflate(8, 8), 3, border_radius=9)
         button(surf, r, "ADOÇÃO!", m, base=(150, 108, 24), scale=2)
     button(surf, b("breed"), "BREED", m, base=(104, 76, 132))
+    button(surf, b("loja"), "LOJA", m, base=(120, 86, 28))
     button(surf, b("menu"), "MENU", m, base=C["card"])
     hint = ("Deck pronto: INICIAR RUN." if full
             else f"Faltam {col.deck_size - col.deck_count} gato(s) no deck. Veja a COLEÇÃO.")
@@ -319,6 +332,54 @@ def draw_ficha(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
     button(surf, x, "X", m, base=C["card"])
 
 
+# ------------------------------------------------------------------ areas bloqueadas
+def draw_world_locks(surf: pygame.Surface, hub: HubController, art: pen_sprites.PenArt, day, ui: UIState,
+                     quiet: bool) -> None:
+    """Camadas de bloqueio, placas e a cesta dos filhotes (ordem do relatorio T13.3)."""
+    if hub.shop is None:
+        return
+    la = lock_art.art()
+    over = None if (quiet or hub.area_open) else hub.sign_at(ui.mouse)
+    render_lock.draw_locks(surf, la, art, day, hub.shop, hub.unlock_fx, ui.t, over)
+    n = hub.basket_count
+    kit_zone = art.geo.zones["filhotes"].rect
+    if hub.pen is not None and not hub.pen.zone_open.get("filhotes", True):
+        render_lock.draw_basket(surf, la, art, day, n, kit_zone)
+    if over:
+        row = next((r for r in hub.shop.areas() if r.id == over), None)
+        sg = render_lock.sign_pos(la, over)
+        if row is not None and sg is not None:
+            render_lock.draw_hover_label(surf, sg, row.name, row.price)
+
+
+# ------------------------------------------------------------------ conteudo das areas 4 a 6
+def opened_content(hub: HubController) -> list:
+    """Conteudo (`lock/conteudo.json`) das areas ja desbloqueadas; area bloqueada nao mostra nada."""
+    owned = set(hub.save.areas_unlocked) if hub.save is not None else set()
+    return [ca for aid, ca in hub.area_content.items() if aid in owned]
+
+
+def draw_content_floors(surf: pygame.Surface, art: pen_sprites.PenArt, day: DayState, areas: list, t: float) -> None:
+    """Chao de cada area aberta, abaixo dos gatos, com a mesma tinta do periodo do fundo."""
+    la, tint_c = lock_art.art(), art.tint_for(day)
+    for ca in areas:
+        img = la.content_floor(ca.id, t)
+        if img is not None:
+            surf.blit(la.tinted(img, tint_c), ca.rect[:2])
+
+
+def content_sprites(art: pen_sprites.PenArt, day: DayState, areas: list) -> list[tuple[float, int, str, object]]:
+    """Sprites `sorted` (arvores) como itens da fila por y; kind -1 = atras de um gato no mesmo y."""
+    la, tint_c = lock_art.art(), art.tint_for(day)
+    out: list[tuple[float, int, str, object]] = []
+    for ca in areas:
+        for sp in ca.sprites:
+            img = la.content_sprite(sp.file)
+            if img is not None:
+                out.append((sp.y, -1, sp.file, (la.tinted(img, tint_c), sp.x - sp.anchor[0], sp.y - sp.anchor[1])))
+    return out
+
+
 # ------------------------------------------------------------------ quadro
 def draw_pen(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
     art = pen_sprites.art()
@@ -326,24 +387,30 @@ def draw_pen(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
     day = pen.day
     draw_floor(surf, art, day)
     clock = pen.time
+    areas = opened_content(hub)
+    draw_content_floors(surf, art, day, areas, clock)
     draw_ambient(surf, art, clock, True, day)
     quiet = hub._modal_open()
     hovered = None if quiet else pen.hit(ui.mouse)
     over_panel = LP.panel_rect(art.geo).collidepoint(ui.mouse)
     hov_obj = None if (quiet or hovered or over_panel) else pen.hit_object(ui.mouse)
     for o in pen.objects:                                   # camas e brinquedos "floor": abaixo de todos os gatos
-        if o.spec.layer == "floor":
+        if o.active and o.spec.layer == "floor":
             draw_object(surf, art, o, o.index == hov_obj, day)
     layer: list[tuple[float, int, str, object]] = [(o.spec.y + o.oy, 0, "", o) for o in pen.objects
-                                                   if o.spec.layer != "floor"]
+                                                   if o.active and o.spec.layer != "floor"]
     layer += [(pen.sort_y(c), 1, c.cat_id, c) for c in pen.cats]
+    layer += content_sprites(art, day, areas)
     layer.sort(key=lambda it: it[:3])
     for _, kind, _, it in layer:
-        if kind == 0:
+        if kind == -1:
+            surf.blit(it[0], (it[1], it[2]))
+        elif kind == 0:
             draw_object(surf, art, it, it.index == hov_obj, day)
         else:
             draw_cat(surf, it, art, ui, it.cat_id == hovered, it.cat_id == hub.ficha, day)
     draw_hearts(surf, pen.hearts, art)
+    draw_world_locks(surf, hub, art, day, ui, quiet)
     draw_ambient(surf, art, clock, False, day)
     if hovered and hovered != hub.ficha:
         c = pen.cat(hovered)
@@ -356,4 +423,6 @@ def draw_pen(surf: pygame.Surface, hub: HubController, ui: UIState) -> None:
         draw_rename(surf, hub.col, ui)
     if hub.col.confirm_donate:
         draw_donate_confirm(surf, hub.col, ui)
-    Wd.toast(surf, hub.toast or hub.col.toast)
+    if hub.area_open and hub.shop:
+        render_eco.draw_area_panel(surf, hub.shop, hub.area_open, ui)
+    Wd.toast(surf, hub.toast or hub.col.toast or (hub.shop.toast if hub.shop else None))

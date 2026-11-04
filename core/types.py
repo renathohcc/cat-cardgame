@@ -20,6 +20,10 @@ class Cat:
     name: str | None = None
     rest_runs_left: int = 0
     runs_as_kitten: int = 0
+    generation: int = 1                 # 1 = inicial/adotado; filhote = max(pais) + 1
+    parents: list[str] = field(default_factory=list)   # [pai, mae] ou []
+    history: dict[str, int] = field(default_factory=lambda: {
+        "runs": 0, "duels_won": 0, "bosses_defeated": 0})
 
 
 @dataclass(frozen=True)
@@ -41,6 +45,7 @@ class Content:
     specials: dict[str, dict[str, Any]] = field(default_factory=dict)
     enemies: dict[str, dict[str, Any]] = field(default_factory=dict)
     run: dict[str, Any] | None = None   # data/run.json (None = sem run)
+    shop: dict[str, Any] = field(default_factory=dict)   # data/shop.json ({} = sem loja)
 
 
 # ---------------------------------------------------------------- duelo

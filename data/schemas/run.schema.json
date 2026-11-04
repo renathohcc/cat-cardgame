@@ -4,9 +4,10 @@
   "description": "Mini-run. Conexoes: todo no de uma camada conecta a todos os nos da camada seguinte (sem campo de arestas). Ultima camada = 1 no chefe (conferido no validate_data.py).",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "draft_options", "draft_options_elite", "draft_options_rest", "drafts_elite", "rest_draft", "pool", "start_deck", "map"],
+  "required": ["schema_version", "league", "draft_options", "draft_options_elite", "draft_options_rest", "drafts_elite", "rest_draft", "pool", "start_deck", "map"],
   "properties": {
     "schema_version": {"const": 1},
+    "league": {"type": "integer", "minimum": 1, "description": "Liga da run (lida por core/runend.py)"},
     "draft_options": {"type": "integer", "minimum": 1},
     "draft_options_elite": {"type": "integer", "minimum": 1},
     "draft_options_rest": {"type": "integer", "minimum": 1},

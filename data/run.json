@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "league": 1,
   "draft_options": 3,
   "draft_options_elite": 3,
   "draft_options_rest": 2,

@@ -1,0 +1,167 @@
+{
+ "image": "ambient.png",
+ "size": [
+  768,
+  320
+ ],
+ "objects": {
+  "borboleta": {
+   "frame": [
+    96,
+    64
+   ],
+   "anchor": [
+    48,
+    60
+   ],
+   "anims": {
+    "idle": {
+     "row": 0,
+     "frames": 8,
+     "fps": 8,
+     "loop": true
+    }
+   }
+  },
+  "vagalumes": {
+   "frame": [
+    96,
+    64
+   ],
+   "anchor": [
+    48,
+    60
+   ],
+   "anims": {
+    "idle": {
+     "row": 1,
+     "frames": 8,
+     "fps": 6,
+     "loop": true
+    }
+   }
+  },
+  "folhas": {
+   "frame": [
+    96,
+    64
+   ],
+   "anchor": [
+    48,
+    60
+   ],
+   "anims": {
+    "idle": {
+     "row": 2,
+     "frames": 8,
+     "fps": 6,
+     "loop": true
+    }
+   }
+  },
+  "lanterna": {
+   "frame": [
+    96,
+    64
+   ],
+   "anchor": [
+    48,
+    60
+   ],
+   "anims": {
+    "off": {
+     "row": 3,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    },
+    "on": {
+     "row": 4,
+     "frames": 4,
+     "fps": 6,
+     "loop": true
+    }
+   }
+  }
+ },
+ "ambient": {
+  "borboleta": {
+   "frame": [
+    96,
+    64
+   ],
+   "anchor": [
+    48,
+    60
+   ],
+   "anims": {
+    "idle": {
+     "row": 0,
+     "frames": 8,
+     "fps": 8,
+     "loop": true
+    }
+   }
+  },
+  "vagalumes": {
+   "frame": [
+    96,
+    64
+   ],
+   "anchor": [
+    48,
+    60
+   ],
+   "anims": {
+    "idle": {
+     "row": 1,
+     "frames": 8,
+     "fps": 6,
+     "loop": true
+    }
+   }
+  },
+  "folhas": {
+   "frame": [
+    96,
+    64
+   ],
+   "anchor": [
+    48,
+    60
+   ],
+   "anims": {
+    "idle": {
+     "row": 2,
+     "frames": 8,
+     "fps": 6,
+     "loop": true
+    }
+   }
+  },
+  "lanterna": {
+   "frame": [
+    96,
+    64
+   ],
+   "anchor": [
+    48,
+    60
+   ],
+   "anims": {
+    "off": {
+     "row": 3,
+     "frames": 1,
+     "fps": 1,
+     "loop": true
+    },
+    "on": {
+     "row": 4,
+     "frames": 4,
+     "fps": 6,
+     "loop": true
+    }
+   }
+  }
+ }
+}

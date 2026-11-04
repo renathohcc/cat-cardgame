@@ -813,7 +813,7 @@ def test_varias_runs_seguidas_mantem_save_consistente(content, save):
         run = jogar_run(content, save, 10 + i)
         create_adoption(content, save, Random(i), run.result, run.nodes_cleared)
         for c in list(pend(save)):
-            adopt(content, save, c.id)
+            adopt(content, save, c.id, enforce_capacity=False)
         ids = [c.id for c in save.cats]
         assert len(set(ids)) == len(ids)
         assert save.next_cat_id > max(int(x.split("-")[1]) for x in ids)

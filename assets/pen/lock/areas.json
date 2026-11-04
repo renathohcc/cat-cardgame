@@ -1,0 +1,104 @@
+{
+  "grid": 16,
+  "sign": {
+    "free": "placa_livre.png",
+    "locked": "placa_bloqueada.png",
+    "size": [
+      32,
+      32
+    ],
+    "anchor": "centro-base [16,32]",
+    "text_rect": [
+      4,
+      6,
+      24,
+      14
+    ]
+  },
+  "areas": [
+    {
+      "id": "cercado-adultos-ampliado",
+      "file": "bloqueio_cercado-adultos-ampliado.png",
+      "rect": [
+        48,
+        64,
+        384,
+        128
+      ],
+      "anchor_sign": [
+        240,
+        144
+      ]
+    },
+    {
+      "id": "cercadinho-filhotes",
+      "file": "bloqueio_cercadinho-filhotes.png",
+      "rect": [
+        496,
+        304,
+        208,
+        176
+      ],
+      "anchor_sign": [
+        600,
+        408
+      ]
+    },
+    {
+      "id": "patio-casais-ampliado",
+      "file": "bloqueio_patio-casais-ampliado.png",
+      "rect": [
+        496,
+        160,
+        208,
+        80
+      ],
+      "anchor_sign": [
+        600,
+        216
+      ]
+    },
+    {
+      "id": "jardim-lagoa",
+      "file": "bloqueio_jardim-lagoa.png",
+      "rect": [
+        48,
+        336,
+        192,
+        144
+      ],
+      "anchor_sign": [
+        144,
+        424
+      ]
+    },
+    {
+      "id": "patio-casais-nobre",
+      "file": "bloqueio_patio-casais-nobre.png",
+      "rect": [
+        240,
+        336,
+        192,
+        144
+      ],
+      "anchor_sign": [
+        336,
+        424
+      ]
+    },
+    {
+      "id": "pomar",
+      "file": "bloqueio_pomar.png",
+      "rect": [
+        304,
+        192,
+        128,
+        144
+      ],
+      "anchor_sign": [
+        368,
+        280
+      ]
+    }
+  ]
+}

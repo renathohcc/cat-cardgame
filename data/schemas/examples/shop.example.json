@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "start": {
+    "slots": 18,
+    "couples": 1,
+    "kittens_in_basket": true
+  },
+  "max_slots": 22,
+  "areas": [
+    {
+      "id": "cercado-adultos-ampliado",
+      "name": "Cercado dos adultos ampliado",
+      "description": "A cerca recua e os adultos ganham espaço para esticar as patas.",
+      "price": 8,
+      "prestige_required": 1,
+      "slots_bonus": 2,
+      "unlocks": [],
+      "order": 1
+    },
+    {
+      "id": "cercadinho-filhotes",
+      "name": "Cercadinho de filhotes",
+      "description": "Cerca branca, bolinha e túnel. Os filhotes saem da cesta.",
+      "price": 25,
+      "prestige_required": 1,
+      "slots_bonus": 2,
+      "unlocks": [
+        {
+          "type": "kitten_pen"
+        }
+      ],
+      "order": 2
+    }
+  ],
+  "rations": [
+    {
+      "id": "racao-fofa",
+      "name": "Ração Fofa",
+      "description": "Mais chance de mutação nos IVs da ninhada.",
+      "price": 12,
+      "prestige_required": 1,
+      "effect": {
+        "type": "mutation_chance",
+        "value": 0.15
+      }
+    }
+  ],
+  "decorations": [
+    {
+      "id": "deco-novelo",
+      "name": "Novelo colorido",
+      "description": "Rola, enrola e desenrola.",
+      "price": 10,
+      "kind": "novelo",
+      "area_required": "cercado-adultos-ampliado",
+      "placeholder": false
+    }
+  ]
+}

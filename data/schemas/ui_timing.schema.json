@@ -4,7 +4,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "beats", "lunge", "hitstop", "shake", "damage_number", "poof",
-               "hand", "breathing", "turn_banner", "boss_intro", "energy", "fade", "enemy_speed"],
+               "hand", "breathing", "turn_banner", "boss_intro", "energy", "fade", "economy", "enemy_speed"],
   "$defs": {
     "nonneg": {"type": "number", "minimum": 0},
     "positive": {"type": "number", "exclusiveMinimum": 0},
@@ -142,6 +142,23 @@
       "required": ["scene"],
       "properties": {
         "scene": {"$ref": "#/$defs/nonneg"}
+      }
+    },
+    "economy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unlock_fade", "unlock_fx_hold", "sign_pulse_period", "hud_flash", "seal_time", "seal_pop", "seal_fade", "goal_fill", "coin_tick", "area_toast"],
+      "properties": {
+        "unlock_fade": {"$ref": "#/$defs/positive"},
+        "unlock_fx_hold": {"$ref": "#/$defs/nonneg"},
+        "sign_pulse_period": {"$ref": "#/$defs/positive"},
+        "hud_flash": {"$ref": "#/$defs/nonneg"},
+        "seal_time": {"$ref": "#/$defs/positive"},
+        "seal_pop": {"$ref": "#/$defs/nonneg"},
+        "seal_fade": {"$ref": "#/$defs/nonneg"},
+        "goal_fill": {"$ref": "#/$defs/positive"},
+        "coin_tick": {"$ref": "#/$defs/nonneg"},
+        "area_toast": {"$ref": "#/$defs/nonneg"}
       }
     },
     "enemy_speed": {

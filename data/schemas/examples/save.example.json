@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "cats": [
     {
       "id": "c-000123",
@@ -11,7 +11,17 @@
       "iv_hp": 2,
       "stage": "adult",
       "rest_runs_left": 0,
-      "runs_as_kitten": 0
+      "runs_as_kitten": 0,
+      "generation": 2,
+      "parents": [
+        "c-1",
+        "c-2"
+      ],
+      "history": {
+        "runs": 3,
+        "duels_won": 9,
+        "bosses_defeated": 1
+      }
     }
   ],
   "deck": [
@@ -23,7 +33,12 @@
     {
       "male": "c-1",
       "female": "c-2",
-      "runs_left": 2
+      "runs_left": 2,
+      "ration": "racao-escolha",
+      "ration_choice": {
+        "stat": "atk",
+        "parent": "father"
+      }
     }
   ],
   "pity": {
@@ -54,10 +69,32 @@
         "iv_hp": 2,
         "stage": "adult",
         "rest_runs_left": 0,
-        "runs_as_kitten": 0
+        "runs_as_kitten": 0,
+        "generation": 1,
+        "parents": [],
+        "history": {
+          "runs": 0,
+          "duels_won": 0,
+          "bosses_defeated": 0
+        }
       }
     ],
     "result": "vitoria",
     "nodes_cleared": 3
+  },
+  "prestige": 2,
+  "areas_unlocked": [
+    "pomar"
+  ],
+  "rations": {
+    "racao-fofa": 2
+  },
+  "decorations_owned": [
+    "deco-novelo"
+  ],
+  "first_league_win_claimed": false,
+  "lifetime": {
+    "runs_completed": 0,
+    "duels_won": 0
   }
 }

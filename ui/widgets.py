@@ -12,6 +12,7 @@ from ui import audio, font, skin, sprites
 from ui.render import mix_c, outlined, text_fit, tint
 from ui.theme import BREED_COLOR, C, DEFAULT_BREED_COLOR, H, KEYWORD_COLOR, W
 
+RATION_RULE = "uma ração por casal"          # texto unico da regra (breed e loja)
 WHITE = (255, 255, 255)
 DARK = C["dark"]
 EDGE = C["panel_edge"]

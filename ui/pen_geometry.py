@@ -89,6 +89,11 @@ def _objects(v) -> list[ObjectSpec]:
     return out
 
 
+def make_object(kind: str, x: float, y: float) -> ObjectSpec:
+    """Objeto avulso (decoracao comprada) com slots e uso padrao do `kind`."""
+    return _objects([{"kind": kind, "x": x, "y": y}])[0]
+
+
 def _fallback_zones() -> dict[str, ZoneSpec]:
     return {z: ZoneSpec(DEFAULT_ZONES[z], [ObjectSpec(k, x, y, _default_slots(k), default_slot_use(k))
                                            for k, x, y in _FALLBACK_OBJECTS[z]]) for z in ZONES}

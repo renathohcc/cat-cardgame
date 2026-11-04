@@ -17,22 +17,39 @@ from datetime import datetime
 from pathlib import Path
 from random import Random
 
-from core import (SaveData, advance_after_run, create_adoption, has_pending_adoption, new_game,
-                  read_save, write_save)
+from dataclasses import dataclass
+
+from core import (RunSettlement, SaveData, advance_after_run, close_run, create_adoption, has_pending_adoption,
+                  kittens_in_basket, new_game, prestige_level, read_save, update_prestige, write_save)
 from core import Content, breed_cfg
 from core.types import IllegalAction
-from ui import audio, errors, layout_hub as LH
+from ui import audio, errors, layout_hub as LH, timing as timing_mod
 from ui.adoption_controller import AdoptionController
 from ui.breed_controller import BreedController, NewsController
 from ui.collection_controller import CollectionController
 from ui.controller import Toast
-from ui import layout_pen as LP
+from ui import layout_pen as LP, layout_shop as LS, pen_world
+from ui.render_lock import UnlockFx, update_fx
+from ui.shop_controller import ShopController
 from ui.pen_controller import PenController, PenEntry
 from ui.pen_geometry import load_geometry, pen_limits
 from ui.run_controller import RunController
 
 SHORT_RUN_TEXT = "Run curta: não conta para o breed"
 DEFAULT_SAVE = Path(__file__).resolve().parent.parent / "saves" / "save.json"
+
+
+@dataclass
+class RunSummary:
+    """Resumo do fim da run (do `close_run` do core): ganhos por fonte, meta e Prestigio."""
+    settlement: RunSettlement
+    win: bool
+    nodes: int
+    age: float = 0.0                   # tempo na tela (anima a barra de meta)
+
+    @property
+    def prestige_up(self) -> bool:
+        return self.settlement.prestige_up
 
 
 class HubController:
@@ -66,6 +83,17 @@ class HubController:
         self._pen_sync_clock = 0.0
         self.end_jingle = False                   # run acabou: toca o jingle ate o 1o clique
         self.options_requested = False            # menu > OPCOES: o loop abre a tela de opcoes
+        self.shop: ShopController | None = None   # loja e compras (areas, racoes, decoracao)
+        self.area_open: str | None = None         # painel de compra de uma area aberto no cercado
+        self.unlock_fx: list[UnlockFx] = []       # areas recem-compradas (animacao)
+        self.lock_spec = pen_world.load_lock_spec()
+        self.area_content = pen_world.load_content_spec()      # arte das areas 4 a 6 (so desenha depois de aberta)
+        self.summary: RunSummary | None = None    # resumo da ultima run (tela de resultado)
+        self.unsettled: tuple | None = None       # run cujo close_run falhou (tenta de novo ao voltar ao cercado)
+        self.summary_pending = False              # falta mostrar o resumo antes de voltar ao cercado
+        self.prestige_seen: int | None = None
+        self.seal: list | None = None             # [nivel, idade] do selo de Prestigio
+        self.hud_flash = 0.0                      # realce das vagas depois de comprar uma area
         self.reload()
 
     # ------------------------------------------------------------ save
@@ -87,16 +115,21 @@ class HubController:
             return None
         try:
             self.save_path.parent.mkdir(parents=True, exist_ok=True)
-            write_save(self.save, self.save_path)
+            warn = write_save(self.save, self.save_path)
         except Exception as e:  # noqa: BLE001 - qualquer falha vira aviso, nunca derruba o jogo
             errors.log_exception(e, "persist")
             return str(e) or type(e).__name__
         self.has_file = True
+        if warn:                       # o save foi gravado, mas a copia do v1 falhou: avisa e registra
+            errors.log_exception(RuntimeError(str(warn)), "persist: backup do save v1")
+            self.say("Não consegui guardar a cópia (backup) do save antigo.", "warn", 5.0)
         return None
 
     def adopt_save(self, save: SaveData) -> None:
         self.save = save
         self.load_error = None
+        self.prestige_seen = None
+        self.shop, self.area_open, self.unlock_fx = None, None, []
         self.col = CollectionController(self.content, save, self.persist)
 
     # ------------------------------------------------------------ consultas
@@ -142,15 +175,59 @@ class HubController:
 
     def enter_pen(self) -> None:
         """Abre o cercado (cria o controlador na primeira vez) e sincroniza o elenco."""
+        self.retry_settle()
         if self.col is None and self.save is not None:
             self.col = CollectionController(self.content, self.save, self.persist)
         if self.pen is None:
             self.pen = PenController(Random(self.seed * 31 + 7), load_geometry(), self.pen_max(), self.clock,
                                  self.pen_zone_caps(), audio_rng=Random(self.seed * 53 + 11))
         self.ficha = None
+        self.area_open = None
+        self.summary_pending = False
         self.pen.hold(None)
+        if self.shop is None or self.shop.save is not self.save:
+            self.shop = ShopController(self.content, self.save, self.persist, self.refresh_world, self._area_unlocked)
+        if not any(o.gate for o in self.pen.objects):
+            for deco_id, (kind, x, y) in pen_world.DECOR_ANCHORS.items():
+                self.pen.add_decor(deco_id, kind, x, y)
+        if self.prestige_seen is None:
+            self.prestige_seen = prestige_level(self.content, self.save)
         self.mode = "cercado"
+        self.refresh_world()
+
+    def refresh_world(self) -> None:
+        """Liga ao quintal o que o save diz: areas ainda bloqueadas e decoracao comprada."""
+        if self.pen is None or self.save is None:
+            return
+        locks = pen_world.locked_rects(self.lock_spec, set(self.save.areas_unlocked))
+        opened = {a for a in self.area_content if a in set(self.save.areas_unlocked)}
+        self.pen.set_world(locks, set(self.save.decorations_owned), self.area_content, opened)
         self.sync_pen()
+
+    def _area_unlocked(self, area_id: str) -> None:
+        """Area comprada: anima o desbloqueio, toca o som e realca as vagas."""
+        self.unlock_fx.append(UnlockFx(area_id))
+        self.hud_flash = timing_mod.current().economy.hud_flash
+        audio.sfx("level_up")
+
+    @property
+    def basket_count(self) -> int:
+        """Filhotes na cesta (antes do cercadinho de filhotes): a regra e do core."""
+        if self.save is None or not kittens_in_basket(self.content, self.save):
+            return 0
+        return sum(1 for c in self.save.cats if c.stage == "kitten")
+
+    def _check_prestige(self) -> None:
+        """Nivel de Prestigio subiu (corrida, adocao, compra): mostra o selo e toca o som."""
+        if self.save is None or self.prestige_seen is None:
+            return
+        lvl = prestige_level(self.content, self.save)
+        if lvl > self.prestige_seen:
+            update_prestige(self.content, self.save)
+            self.persist()
+            self.seal = [lvl, 0.0]
+            audio.sfx("level_up")
+        self.prestige_seen = max(self.prestige_seen, lvl)
 
     def pen_entries(self) -> list[PenEntry]:
         out: list[PenEntry] = []
@@ -221,9 +298,13 @@ class HubController:
             return self.breed.hit(pos)
         if m == "novidades":
             return self.news.hit(pos)
+        if m == "loja":
+            return self.shop.hit(pos)
         return LH.hit_test(pos, m)
 
     def _hit_pen(self, pos: tuple[int, int]) -> tuple | None:
+        if self.area_open:
+            return LS.area_panel_hit(pos, self.area_open)
         if self._modal_open():
             return LH.hit_test(pos, "colecao", rename=self.col.editing, donate=self.col.confirm_donate)
         if self.ficha:
@@ -233,6 +314,9 @@ class HubController:
         e = LP.panel_hit(pos, self.pen_buttons(), self.pen_geo())
         if e:
             return e
+        sign = self.sign_at(pos)
+        if sign:
+            return ("area_sign", sign)
         cid = self.pen.hit(pos) if self.pen else None
         if cid:
             return ("pen_cat", cid)
@@ -241,7 +325,32 @@ class HubController:
             return ("pen_obj", oi)
         return ("pen_floor",) if LP.area_rect(self.pen_geo()).collidepoint(pos) else None
 
+    def sign_at(self, pos: tuple[int, int]) -> str | None:
+        """Id da area cuja placa esta sob `pos` (so areas ainda nao compradas)."""
+        if self.save is None:
+            return None
+        for a in self.lock_spec.areas:
+            if a.id in self.save.areas_unlocked:
+                continue
+            x, y, w, h = pen_world.sign_rect(a, self.lock_spec.sign_size)
+            if x <= pos[0] < x + w and y <= pos[1] < y + h + 22:       # +22: o mini-selo sob a placa
+                return a.id
+        return None
+
+    def _click_area(self, elem: tuple | None) -> None:
+        """Painel da area aberto: COMPRAR, FECHAR; clicar fora tambem fecha."""
+        if elem is not None and elem[0] == "area_panel":
+            return
+        if elem is not None and elem[0] == "area_buy":
+            if self.shop.buy_area(elem[1]):
+                self.area_open = None
+            return
+        self.area_open = None
+
     def _click_pen(self, elem: tuple | None) -> None:
+        if self.area_open:
+            self._click_area(elem)
+            return
         if elem is None:
             return
         col, kind = self.col, elem[0]
@@ -262,6 +371,9 @@ class HubController:
         elif kind == "ficha_donate":
             col.selected = self.ficha
             col.click(("donate",))
+        elif kind == "area_sign":
+            self.close_ficha()
+            self.area_open = elem[1]
         elif kind == "pen_btn":
             self._pen_button(elem[1])
 
@@ -282,13 +394,17 @@ class HubController:
             self.close_ficha()
             self.breed_from = "cercado"
             self.open_breed()
+        elif name == "loja":
+            self.close_ficha()
+            self.mode = "loja"
         elif name == "menu":
             self.close_ficha()
             self.mode = "menu"
 
     # ------------------------------------------------------------ audio
-    BACK_KINDS = ("back", "result_back", "ficha_close", "confirm_no", "donate_no", "rename_cancel")
-    QUIET_KINDS = ("none", "pen_obj", "row", "scroll")
+    BACK_KINDS = ("back", "result_back", "ficha_close", "confirm_no", "donate_no", "rename_cancel", "shop_back",
+                  "area_close")
+    QUIET_KINDS = ("none", "pen_obj", "row", "scroll", "area_panel")
 
     def _snap(self) -> tuple:
         s = self.save
@@ -298,7 +414,7 @@ class HubController:
     def _modal_flags(self) -> tuple:
         col = self.col
         return (self.confirm_new, bool(col and col.editing), bool(col and col.confirm_donate),
-                self.ficha is not None)
+                self.ficha is not None, self.area_open is not None)
 
     def _sound_after(self, elem: tuple | None, before: tuple, key: bool = False) -> None:
         """Som de uma acao de meta, derivado do que mudou (nunca decide regra)."""
@@ -341,7 +457,7 @@ class HubController:
         if m == "cercado":
             night = self.pen is not None and self.pen.day.dominant in ("entardecer", "noite")
             return "criatorio_noite" if night else "criatorio_dia"
-        return {"colecao": "colecao", "criatorio": "breed", "novidades": "breed", "adocao": "adocao",
+        return {"colecao": "colecao", "loja": "colecao", "criatorio": "breed", "novidades": "breed", "adocao": "adocao",
                 "resultado": "fim_vitoria" if self.result_win else "fim_derrota"}.get(m, "menu")
 
     def click(self, elem: tuple | None) -> None:
@@ -353,6 +469,7 @@ class HubController:
         self._click(elem)
         self._drain_pen_sounds()
         self._sound_after(elem, before)
+        self._check_prestige()
 
     def _click(self, elem: tuple | None) -> None:
         m = self.mode
@@ -363,6 +480,8 @@ class HubController:
             self._click_menu(elem)
         elif m == "cercado":
             self._click_pen(elem)
+        elif m == "loja":
+            self._click_shop(elem)
         elif m == "colecao":
             act = self.col.click(elem)
             if act == "back":
@@ -383,6 +502,17 @@ class HubController:
                 self._finish_adoption()
         elif m == "resultado" and elem == ("result_back",):
             self.enter_pen()
+
+    def _click_shop(self, elem: tuple | None) -> None:
+        coins = self.save.coins
+        act = self.shop.click(elem)
+        if act == "back":
+            self.enter_pen()
+        elif isinstance(act, tuple) and act[0] == "goto_area":
+            self.enter_pen()
+            self.area_open = act[1]
+        elif self.save.coins < coins:
+            audio.sfx("coin")
 
     def _click_menu(self, elem: tuple | None) -> None:
         if self.confirm_new:
@@ -466,6 +596,9 @@ class HubController:
         rows = self.col.rows()
         if self.col.selected_cat() is None and rows:
             self.col.selected = rows[0].cat.id
+        if self.summary_pending and self.summary is not None:
+            self.mode = "resultado"          # depois da adocao, o resumo da run (moedas, meta, Prestigio)
+            return
         self.enter_pen()
 
     def start_new_game(self) -> None:
@@ -504,8 +637,12 @@ class HubController:
                 self.col.confirm_donate = False
             else:
                 self.enter_pen()
+        elif m == "loja":
+            self.enter_pen()
         elif m == "cercado":
-            if self.col.editing:
+            if self.area_open:
+                self.area_open = None
+            elif self.col.editing:
                 self.col.cancel_rename()
             elif self.col.confirm_donate:
                 self.col.confirm_donate = False
@@ -521,6 +658,9 @@ class HubController:
         elif m == "novidades":
             self._finish_news()
         elif m == "adocao":
+            if self.adopt.room_for:      # painel de gatil cheio aberto: ESC so fecha o painel
+                self.adopt.close_room()
+                return
             self.adopt = None            # a oferta fica no save; o botao ADOCAO do cercado reabre
             self.enter_pen()
         elif m == "resultado":
@@ -535,7 +675,7 @@ class HubController:
             return ok
         if self.mode == "cercado":
             col = self.col
-            if not (col.editing or col.confirm_donate or self.ficha):
+            if not (col.editing or col.confirm_donate or self.ficha or self.area_open):
                 return False
         self.key_escape()
         return True
@@ -544,6 +684,7 @@ class HubController:
         """Pausa > SAIR PARA O MENU (so no cercado; o save ja foi gravado)."""
         if self.mode == "cercado":
             self.close_ficha()
+            self.area_open = None
             self.mode = "menu"
 
     def scene_key(self) -> str:
@@ -599,7 +740,10 @@ class HubController:
         elif rc.end_line:
             self.result_detail.append(f"{rc.end_line[0]}: \"{rc.end_line[1]}\"")
         result = "abandono" if rc.abandoned else rc.run.result
+        run = rc.run
         self.rc = None
+        self.summary = self._settle(run, win, n)         # moedas, historico e Prestigio (core)
+        self.summary_pending = self.summary is not None
         # ordem fixa: breed/crescimento -> adocao -> UM unico write_save
         aftermath = advance_after_run(self.content, self.save,
                                       Random(self.seed * 104729 + self.runs_started), n)
@@ -611,6 +755,7 @@ class HubController:
         err = self.persist()            # UM unico write_save
         if err:
             self.say(f"Não consegui salvar: {err}")
+        self._check_prestige()
         self.end_jingle = True
         if aftermath.born:
             audio.sfx("kitten_born")
@@ -625,8 +770,47 @@ class HubController:
         self.result_detail.append("Nenhum gato para adotar desta vez")
         self.mode = "resultado"
 
+    def _settle(self, run, win: bool, nodes: int) -> RunSummary | None:
+        """`close_run` do core. Run que nao e uma `Run` de verdade (teste/demo) fica sem resumo."""
+        try:
+            summary = RunSummary(close_run(self.content, self.save, run), win, nodes)
+        except IllegalAction as e:                       # erro de regra esperado (ex.: run ja fechada)
+            self.say(str(e))
+            return None
+        except Exception as e:  # noqa: BLE001 - bug: nao perder moedas/historico/Prestigio da run
+            errors.log_exception(e, "close_run")
+            self.unsettled = (run, win, nodes)           # mantem a run pendente para tentar de novo
+            self.result_detail.append("Não consegui contabilizar as moedas desta run. Vou tentar de novo "
+                                      "ao voltar ao cercado (detalhes em errors.log).")
+            self.say("Erro ao fechar a run: moedas e Prestígio pendentes. Veja errors.log.", ttl=6.0)
+            return None
+        self.unsettled = None
+        return summary
+
+    def retry_settle(self) -> None:
+        """Tenta de novo fechar a run que falhou antes; ao conseguir, grava o save."""
+        if self.unsettled is None or self.save is None:
+            return
+        run, win, nodes = self.unsettled
+        self.unsettled = None
+        self.summary = self._settle(run, win, nodes)
+        if self.unsettled is None and self.summary is not None:
+            err = self.persist()
+            self.say(f"Não consegui salvar: {err}" if err else "Run contabilizada.", "info" if not err else "error")
+
     # ------------------------------------------------------------ tempo
     def update(self, dt: float) -> None:
+        eco = timing_mod.current().economy
+        if self.shop:
+            self.shop.update(dt)
+        self.unlock_fx = update_fx(self.unlock_fx, dt)
+        self.hud_flash = max(0.0, self.hud_flash - dt)
+        if self.seal is not None:
+            self.seal[1] += dt
+            if self.seal[1] >= eco.seal_time:
+                self.seal = None
+        if self.summary is not None and self.mode == "resultado":
+            self.summary.age += dt
         if self.toast:
             self.toast.ttl -= dt
             if self.toast.ttl <= 0:

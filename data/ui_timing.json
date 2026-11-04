@@ -62,6 +62,18 @@
   "fade": {
     "scene": 0.2
   },
+  "economy": {
+    "unlock_fade": 0.4,
+    "unlock_fx_hold": 0.15,
+    "sign_pulse_period": 1.4,
+    "hud_flash": 0.9,
+    "seal_time": 2.6,
+    "seal_pop": 0.35,
+    "seal_fade": 0.4,
+    "goal_fill": 0.9,
+    "coin_tick": 0.5,
+    "area_toast": 3.0
+  },
   "enemy_speed": {
     "options": {
       "1x": 1.0,

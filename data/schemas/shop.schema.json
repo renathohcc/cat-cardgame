@@ -1,0 +1,308 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "shop",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "start",
+    "max_slots",
+    "areas",
+    "rations",
+    "decorations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "start": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slots",
+        "couples",
+        "kittens_in_basket"
+      ],
+      "properties": {
+        "slots": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "couples": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kittens_in_basket": {
+          "type": "boolean"
+        }
+      }
+    },
+    "max_slots": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "areas": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "price",
+          "prestige_required",
+          "slots_bonus",
+          "unlocks",
+          "order"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "prestige_required": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "slots_bonus": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "unlocks": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "couple"
+                  ],
+                  "properties": {
+                    "type": {
+                      "const": "couple_slot"
+                    },
+                    "couple": {
+                      "type": "integer",
+                      "minimum": 2
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "const": "kitten_pen"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "set"
+                  ],
+                  "properties": {
+                    "type": {
+                      "const": "decor_set"
+                    },
+                    "set": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "const": "decor_rare"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "rations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "price",
+          "prestige_required",
+          "effect"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "prestige_required": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "effect": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "type",
+                  "value"
+                ],
+                "properties": {
+                  "type": {
+                    "const": "mutation_chance"
+                  },
+                  "value": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "type",
+                  "value",
+                  "min_runs"
+                ],
+                "properties": {
+                  "type": {
+                    "const": "breed_runs_reduction"
+                  },
+                  "value": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "min_runs": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "type",
+                  "value"
+                ],
+                "properties": {
+                  "type": {
+                    "const": "fix_one_iv"
+                  },
+                  "value": {
+                    "const": true
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "decorations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "price",
+          "kind",
+          "area_required",
+          "placeholder"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kind": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "area_required": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "set": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "placeholder": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}
